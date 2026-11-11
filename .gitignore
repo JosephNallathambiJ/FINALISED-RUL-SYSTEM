@@ -1,4 +1,4 @@
-# Dependencies & environment
+# Dependencies & environments
 node_modules/
 __pycache__/
 *.pyc
@@ -6,7 +6,7 @@ __pycache__/
 *.log
 .DS_Store
 
-# Large datasets & binary models
+# Large datasets & binaries (use external storage or Git LFS)
 *.csv
 *.joblib
 *.png
