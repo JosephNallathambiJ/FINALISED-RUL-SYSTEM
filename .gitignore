@@ -1,0 +1,13 @@
+# Dependencies & environment
+node_modules/
+__pycache__/
+*.pyc
+.env
+*.log
+.DS_Store
+
+# Large datasets & binary models
+*.csv
+*.joblib
+*.png
+commercial_thermal_map_dataset-main/

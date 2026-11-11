@@ -1,0 +1,9 @@
+fastapi==0.103.2
+uvicorn==0.23.2
+pydantic==2.4.2
+langchain==0.0.330
+langchain-community==0.0.34
+paho-mqtt==1.6.1
+numpy>=1.24
+pandas>=2.0
+joblib>=1.3

@@ -1,0 +1,122 @@
+{
+  "dev_8fdd77fed634": {
+    "device_id": "dev_8fdd77fed634",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-03T09:36:30.306272+00:00",
+    "last_seen": "2026-11-03T09:36:30.306272+00:00",
+    "status": "REVOKED",
+    "token_hash": "0dc1fe4223a105c999f92cd09b2fbae6"
+  },
+  "dev_5d6753848c01": {
+    "device_id": "dev_5d6753848c01",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-03T09:37:06.484950+00:00",
+    "last_seen": "2026-11-03T09:37:06.484950+00:00",
+    "status": "REVOKED",
+    "token_hash": "de8d708d3b735a0c1a914aaf7c750147"
+  },
+  "dev_ae8d3354e677": {
+    "device_id": "dev_ae8d3354e677",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-03T10:22:20.451803+00:00",
+    "last_seen": "2026-11-03T10:22:20.451803+00:00",
+    "status": "REVOKED",
+    "token_hash": "7c7263cac6440abf4bd1755c2b8d5094"
+  },
+  "dev_5cb4b8eaf664": {
+    "device_id": "dev_5cb4b8eaf664",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-04T08:47:04.058292+00:00",
+    "last_seen": "2026-11-04T08:47:04.058292+00:00",
+    "status": "REVOKED",
+    "token_hash": "6cee7a3a3afb5e87434552b2dcce2937"
+  },
+  "dev_ebf8d84e7390": {
+    "device_id": "dev_ebf8d84e7390",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-04T08:48:06.351622+00:00",
+    "last_seen": "2026-11-04T08:48:06.351622+00:00",
+    "status": "REVOKED",
+    "token_hash": "aad204a29fea8c1bccea6cea79d05f40"
+  },
+  "dev_5f2658acf210": {
+    "device_id": "dev_5f2658acf210",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-10T08:15:19.745262+00:00",
+    "last_seen": "2026-11-10T08:15:19.745262+00:00",
+    "status": "REVOKED",
+    "token_hash": "bba612cb2b4484b44dc6c2242df7f253"
+  },
+  "dev_58bcec1998d3": {
+    "device_id": "dev_58bcec1998d3",
+    "device_name": "Secondary Node",
+    "device_role": "MONITORING",
+    "ip_address": "127.0.0.1",
+    "hardware_model": "Enrolled Host",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-10T08:27:09.796626+00:00",
+    "last_seen": "2026-11-10T08:27:09.796626+00:00",
+    "status": "ACTIVE",
+    "token_hash": "d1bd2515b5c00cd244bff3958d03652e"
+  },
+  "dev_caf170239792": {
+    "device_id": "dev_caf170239792",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-10T08:30:01.340407+00:00",
+    "last_seen": "2026-11-10T08:30:01.340407+00:00",
+    "status": "REVOKED",
+    "token_hash": "2f793a45d2f89abee00fda64e63a0453"
+  },
+  "dev_b04839a702e0": {
+    "device_id": "dev_b04839a702e0",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-10T09:06:31.840775+00:00",
+    "last_seen": "2026-11-10T09:06:31.840775+00:00",
+    "status": "REVOKED",
+    "token_hash": "a5bd553953ca5c62d01310cf41796e8b"
+  },
+  "dev_779d8df1c306": {
+    "device_id": "dev_779d8df1c306",
+    "device_name": "Lab-Monitoring-Rig",
+    "device_role": "MONITORING",
+    "ip_address": "testclient",
+    "hardware_model": "Dell PowerEdge",
+    "os_info": "Unknown OS",
+    "registered_at": "2026-11-10T09:26:27.664396+00:00",
+    "last_seen": "2026-11-10T09:26:27.664396+00:00",
+    "status": "REVOKED",
+    "token_hash": "583ad185067e2e234c5b38f01785f514"
+  }
+}

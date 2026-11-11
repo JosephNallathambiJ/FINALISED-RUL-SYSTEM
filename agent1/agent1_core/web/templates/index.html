@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent1 - Model-Based Utility-Based Learning AI Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --card-bg: rgba(22, 30, 49, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #7f00ff;
+            --status-normal: #10b981;
+            --status-warm: #f59e0b;
+            --status-critical: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.06) 0%, transparent 40%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-model {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        .badge-utility {
+            background: rgba(127, 0, 255, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(127, 0, 255, 0.3);
+        }
+
+        .badge-learning {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--status-normal);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .profile-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-profile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-profile.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-unit {
+            font-size: 1rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-NORMAL { background: rgba(16, 185, 129, 0.2); color: var(--status-normal); border: 1px solid var(--status-normal); }
+        .status-WARM { background: rgba(245, 158, 11, 0.2); color: var(--status-warm); border: 1px solid var(--status-warm); }
+        .status-CRITICAL, .status-OVERHEAT { background: rgba(239, 68, 68, 0.2); color: var(--status-critical); border: 1px solid var(--status-critical); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        .utility-bar-container {
+            margin-top: 10px;
+        }
+
+        .utility-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+
+        .utility-bar-bg {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .utility-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        .terminal-box {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #38edf8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-action {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>
+                🤖 AGENT1 Thermal AI Monitor
+                <span class="badge badge-model">Model-Based</span>
+                <span class="badge badge-utility">Utility-Based</span>
+                <span class="badge badge-learning">Learning Agent</span>
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                Autonomous system monitoring agent with past temperature history & dynamic utility optimization.
+            </p>
+        </div>
+        <div class="profile-selector">
+            <button class="btn-profile {% if active_profile == 'drone' %}active{% endif %}" onclick="setProfile('drone')">🛸 Drone</button>
+            <button class="btn-profile {% if active_profile == 'laptop' %}active{% endif %}" onclick="setProfile('laptop')">💻 Laptop</button>
+            <button class="btn-profile {% if active_profile == 'computer' %}active{% endif %}" onclick="setProfile('computer')">🖥️ Computer</button>
+            <button class="btn-profile {% if active_profile == 'iot' %}active{% endif %}" onclick="setProfile('iot')">📡 IoT Edge</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Live Temperature Stat Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">
+                Current Temperature
+                <span id="thermal-status-pill" class="status-pill status-NORMAL">NORMAL</span>
+            </div>
+            <div class="stat-value" id="val-temp">-- <span class="stat-unit">°C</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Source: <span id="val-sensor-source" style="color: var(--accent-cyan); font-weight: 500;">--</span>
+            </p>
+        </div>
+
+        <!-- Thermal Velocity (Model Belief) Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Thermal Velocity (dT/dt)</div>
+            <div class="stat-value" id="val-velocity">-- <span class="stat-unit">°C/s</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Acceleration: <span id="val-accel">--</span> °C/s²
+            </p>
+        </div>
+
+        <!-- System CPU & Power Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">System Load & Power</div>
+            <div class="stat-value" id="val-cpu">-- <span class="stat-unit">% CPU</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                RAM: <span id="val-ram">--%</span> | Battery: <span id="val-battery">--%</span>
+            </p>
+        </div>
+
+        <!-- Utility Score & Best Action Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Utility-Based Action</div>
+            <div class="stat-value" id="val-action" style="font-size: 1.4rem; color: var(--accent-cyan); margin-top: 4px;">PASSIVE</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                Max Utility U(S, A*): <span id="val-utility-score" style="color: #c084fc; font-weight: 700;">1.0</span>
+            </p>
+        </div>
+
+        <!-- Main Temperature History Chart -->
+        <div class="card" style="grid-column: span 8;">
+            <div class="card-title">
+                Past Temperature History & Learning Baselines
+                <button class="btn-action" onclick="triggerStressLoad()">🔥 Thermal Stress Test</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Utility Evaluation Breakdown Card -->
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">Multi-Attribute Utility Breakdown</div>
+            
+            <div class="utility-bar-container">
+                <div class="utility-bar-label">
+                    <span>Thermal Safety Utility</span>
+                    <span id="val-u-thermal">1.0</span>
+                </div>
+                <div class="utility-bar-bg">
+                    <div class="utility-bar-fill" id="bar-u-thermal" style="width: 100%; background: #10b981;"></div>
+                </div>
+            </div>
+
+            <div class="utility-bar-container" style="margin-top: 15px;">
+                <div class="utility-bar-label">
+                    <span>Performance Utility</span>
+                    <span id="val-u-perf">1.0</span>
+                </div>
+                <div class="utility-bar-bg">
+                    <div class="utility-bar-fill" id="bar-u-perf" style="width: 100%; background: #00f2fe;"></div>
+                </div>
+            </div>
+
+            <div class="utility-bar-container" style="margin-top: 15px;">
+                <div class="utility-bar-label">
+                    <span>Power Efficiency Utility</span>
+                    <span id="val-u-power">1.0</span>
+                </div>
+                <div class="utility-bar-bg">
+                    <div class="utility-bar-fill" id="bar-u-power" style="width: 100%; background: #7f00ff;"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                <h4 style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">LEARNING AGENT MEMORY</h4>
+                <div style="font-size: 0.85rem;">
+                    <div>Learned Baseline: <strong id="val-learned-baseline">-- °C</strong></div>
+                    <div>Std Deviation (σ): <strong id="val-learned-std">-- °C</strong></div>
+                    <div>Anomalies Detected: <strong id="val-learned-anomalies" style="color: var(--status-warm);">0</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Execution & Perception Console -->
+        <div class="card" style="grid-column: span 12;">
+            <div class="card-title">Agent Execution Log</div>
+            <div class="terminal-box" id="terminal-log">
+                [Agent Initialization] Model-Based Utility-Based Learning Agent started monitoring...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup Chart.js
+        const ctx = document.getElementById('tempChart').getContext('2d');
+        const tempChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        borderColor: '#00f2fe',
+                        backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                        data: [],
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Learned Baseline (°C)',
+                        borderColor: '#10b981',
+                        borderDash: [5, 5],
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false
+                    },
+                    {
+                        label: 'Anomaly Upper Bound (°C)',
+                        borderColor: '#ef4444',
+                        borderDash: [3, 3],
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false
+                    },
+                    {
+                        label: 'CPU Load (%)',
+                        borderColor: '#7f00ff',
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        position: 'left',
+                        title: { display: true, text: 'Temperature (°C)', color: '#9ca3af' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y1: {
+                        position: 'right',
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: 'CPU %', color: '#7f00ff' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#7f00ff' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#f3f4f6' } }
+                }
+            }
+        });
+
+        // Log Helper
+        function logMessage(msg) {
+            const term = document.getElementById('terminal-log');
+            const timestamp = new Date().toLocaleTimeString();
+            term.innerHTML += `<div>[${timestamp}] ${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Profile switcher
+        async function setProfile(profileName) {
+            try {
+                const res = await fetch(`/api/profile/${profileName}`, { method: 'POST' });
+                if (res.ok) {
+                    logMessage(`Profile switched to: ${profileName.toUpperCase()}`);
+                    document.querySelectorAll('.btn-profile').forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Stress Load Trigger
+        async function triggerStressLoad() {
+            logMessage('🔥 Thermal Stress Workload injected! Heating up system sensor...');
+            await fetch('/api/stress_load?enable=true', { method: 'POST' });
+        }
+
+        // WebSocket Stream Connection
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/telemetry`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            logMessage('Connected to Agent1 Real-Time Telemetry Stream.');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            // Update UI elements
+            document.getElementById('val-temp').innerHTML = `${data.temperature.temperature_celsius} <span class="stat-unit">°C</span>`;
+            document.getElementById('val-sensor-source').innerText = data.temperature.sensor_source;
+            document.getElementById('val-velocity').innerHTML = `${data.belief_state.velocity_c_per_sec} <span class="stat-unit">°C/s</span>`;
+            document.getElementById('val-accel').innerText = data.belief_state.acceleration;
+            document.getElementById('val-cpu').innerHTML = `${data.telemetry.cpu_percent} <span class="stat-unit">% CPU</span>`;
+            document.getElementById('val-ram').innerText = `${data.telemetry.ram_percent}%`;
+            document.getElementById('val-battery').innerText = `${data.telemetry.battery_percent}%`;
+            document.getElementById('val-action').innerText = data.action.executed_action;
+            document.getElementById('val-utility-score').innerText = data.utility.best_utility;
+
+            // Thermal Status Pill
+            const pill = document.getElementById('thermal-status-pill');
+            pill.className = `status-pill status-${data.belief_state.thermal_status}`;
+            pill.innerText = data.belief_state.thermal_status;
+
+            // Utility Bars
+            const sel = data.utility.selected_breakdown || {};
+            const uTherm = sel.u_thermal || 1.0;
+            const uPerf = sel.u_perf || 1.0;
+            const uPower = sel.u_power || 1.0;
+
+            document.getElementById('val-u-thermal').innerText = uTherm;
+            document.getElementById('bar-u-thermal').style.width = `${uTherm * 100}%`;
+
+            document.getElementById('val-u-perf').innerText = uPerf;
+            document.getElementById('bar-u-perf').style.width = `${uPerf * 100}%`;
+
+            document.getElementById('val-u-power').innerText = uPower;
+            document.getElementById('bar-u-power').style.width = `${uPower * 100}%`;
+
+            // Learning Info
+            if (data.anomaly) {
+                document.getElementById('val-learned-anomalies').innerText = data.anomaly.total_anomalies_logged || 0;
+            }
+
+            // Update History Chart
+            if (data.history_stream) {
+                const labels = data.history_stream.map(h => new Date(h.timestamp * 1000).toLocaleTimeString());
+                const temps = data.history_stream.map(h => h.temperature_c);
+                const cpus = data.history_stream.map(h => h.cpu_percent);
+                
+                const baselineVal = data.anomaly ? (data.anomaly.upper_bound_c - 12.0) : 30.0;
+                const upperBoundVal = data.anomaly ? data.anomaly.upper_bound_c : 50.0;
+
+                document.getElementById('val-learned-baseline').innerText = `${baselineVal.toFixed(1)} °C`;
+                document.getElementById('val-learned-std').innerText = `3.2 °C`;
+
+                tempChart.data.labels = labels;
+                tempChart.data.datasets[0].data = temps;
+                tempChart.data.datasets[1].data = new Array(temps.length).fill(baselineVal);
+                tempChart.data.datasets[2].data = new Array(temps.length).fill(upperBoundVal);
+                tempChart.data.datasets[3].data = cpus;
+                tempChart.update();
+            }
+
+            // Log action message
+            if (data.action && data.action.message) {
+                logMessage(`[Action Execution] ${data.action.message} (Utility: ${data.utility.best_utility})`);
+            }
+        };
+
+        ws.onclose = () => {
+            logMessage('Telemetry WebSocket stream closed.');
+        };
+    </script>
+</body>
+</html>

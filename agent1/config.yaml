@@ -1,0 +1,71 @@
+# Config settings for Agentic AI - agent1
+# Supports profiles: drone, laptop, computer, iot
+
+active_profile: "laptop"
+db_path: "temperature_history.db"
+agent_interval_seconds: 2.0
+
+profiles:
+  drone:
+    name: "Autonomous Aerial Drone / UAV"
+    thermal_warning_temp: 60.0
+    thermal_critical_temp: 72.0
+    max_safe_temp: 78.0
+    power_priority: 0.9      # High weight on preserving battery and preventing thermal shutoff in mid-air
+    perf_priority: 0.7       # Flight controls must remain responsive
+    safety_priority: 1.0     # Critical: overheating leads to catastrophic crash
+    cooling_capacity: 0.3    # Passive airflow limited by payload enclosure
+    default_actions:
+      - PASSIVE
+      - COOL_MODERATE
+      - THROTTLE_LIGHT
+      - REDUCE_PAYLOAD
+      - EMERGENCY_LANDING_ALERT
+
+  laptop:
+    name: "Laptop / Portable Computer"
+    thermal_warning_temp: 70.0
+    thermal_critical_temp: 85.0
+    max_safe_temp: 95.0
+    power_priority: 0.5      # Balance battery efficiency and performance
+    perf_priority: 0.7
+    safety_priority: 0.8
+    cooling_capacity: 0.6    # Active fan system present
+    default_actions:
+      - PASSIVE
+      - COOL_MODERATE
+      - THROTTLE_LIGHT
+      - THROTTLE_HEAVY
+      - EMERGENCY_COOLING
+
+  computer:
+    name: "Desktop / Workstation Computer"
+    thermal_warning_temp: 75.0
+    thermal_critical_temp: 90.0
+    max_safe_temp: 100.0
+    power_priority: 0.2      # AC powered, performance is primary goal
+    perf_priority: 0.95
+    safety_priority: 0.7
+    cooling_capacity: 0.9    # High capacity liquid/air fans
+    default_actions:
+      - PASSIVE
+      - COOL_MODERATE
+      - THROTTLE_LIGHT
+      - THROTTLE_HEAVY
+      - EMERGENCY_COOLING
+
+  iot:
+    name: "Embedded IoT / Edge Sensor Node"
+    thermal_warning_temp: 55.0
+    thermal_critical_temp: 68.0
+    max_safe_temp: 75.0
+    power_priority: 0.85     # Battery or solar powered edge device
+    perf_priority: 0.4
+    safety_priority: 0.9
+    cooling_capacity: 0.2    # Fanless, passive heat sink only
+    default_actions:
+      - PASSIVE
+      - THROTTLE_LIGHT
+      - THROTTLE_HEAVY
+      - SLEEP_DUTY_CYCLE
+      - EMERGENCY_ALERT

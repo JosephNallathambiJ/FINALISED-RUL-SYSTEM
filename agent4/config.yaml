@@ -1,0 +1,43 @@
+# Config settings for CPU Frequency & Task Performance Agent - agent4
+# Controls CPU core frequency scaling (DVFS), governor modes, and task execution priority
+
+active_profile: "laptop"
+db_path: "cpu_freq_history.db"
+agent_interval_seconds: 1.5
+
+profiles:
+  laptop:
+    name: "Laptop CPU Frequency & Power Governor"
+    min_freq_mhz: 800
+    max_freq_mhz: 3800
+    target_cpu_load: 65.0
+    governor_mode: "POWERSAVE"
+    perf_priority: 0.70
+    power_priority: 0.75
+
+  computer:
+    name: "Desktop CPU Workstation Governor"
+    min_freq_mhz: 1400
+    max_freq_mhz: 4800
+    target_cpu_load: 85.0
+    governor_mode: "PERFORMANCE"
+    perf_priority: 0.95
+    power_priority: 0.30
+
+  drone:
+    name: "Drone Onboard MCU Governor"
+    min_freq_mhz: 400
+    max_freq_mhz: 2400
+    target_cpu_load: 50.0
+    governor_mode: "ONDEMAND"
+    perf_priority: 0.80
+    power_priority: 0.85
+
+  iot:
+    name: "IoT Microcontroller DVFS"
+    min_freq_mhz: 200
+    max_freq_mhz: 1200
+    target_cpu_load: 40.0
+    governor_mode: "SCHEDUTIL"
+    perf_priority: 0.50
+    power_priority: 0.95

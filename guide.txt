@@ -1,0 +1,452 @@
+IQAC FOR A REAL IOT DEVICE
+===========================
+
+This guide is for a beginner. The simplest working setup is:
+
+  DEVICE A: Raspberry Pi or Linux IoT gateway
+            + DS18B20 temperature sensor
+            + IQAC monitoring code
+            + records API on port 8001
+
+  DEVICE B: Laptop or desktop computer
+            + iqac-prediction
+            + RUL calculation API on port 8000
+
+Both devices must be on the same Wi-Fi/LAN, or connected through a VPN.
+
+IMPORTANT SAFETY RULE
+---------------------
+Start with temperature monitoring only. Do not connect a fan, relay, motor,
+VRM, or high-voltage circuit directly to a Raspberry Pi GPIO pin. Use the
+correct transistor, driver board, fuse, isolation, and external power supply.
+Have an electronics engineer check power wiring before connecting actuators.
+
+PART 1 - HARDWARE
+-----------------
+
+Recommended first sensor: DS18B20 waterproof temperature sensor.
+
+Typical DS18B20 wiring:
+
+  DS18B20 red    -> Raspberry Pi 3.3V
+  DS18B20 black  -> Raspberry Pi GND
+  DS18B20 yellow -> Raspberry Pi GPIO4 / 1-Wire data
+  4.7k resistor  -> between data and 3.3V
+
+Pin numbers vary by board. Confirm the pinout for your exact board before
+powering it. Do not use 5V logic on a 3.3V GPIO input.
+
+PART 2 - PREPARE DEVICE A (MONITORED IOT DEVICE)
+-------------------------------------------------
+
+1. Put the IQAC project on the Raspberry Pi/Linux gateway.
+
+2. Install Python and system support for 1-Wire. On Raspberry Pi OS, enable
+   the 1-Wire interface with raspi-config, then reboot. On another Linux
+   distribution, enable the w1-gpio and w1-therm kernel modules.
+
+   After reboot, check that the sensor exists:
+
+     ls /sys/bus/w1/devices/28-*/w1_slave
+
+   If no file is displayed, stop here and fix the wiring or 1-Wire setup.
+
+3. Create the IQAC environment:
+
+     cd /path/to/iqac
+     python3 -m venv .venv
+     source .venv/bin/activate
+     python -m pip install -r requirements.txt
+
+4. Test the sensor directly:
+
+     cat /sys/bus/w1/devices/28-*/w1_slave
+
+   The first line should end in YES. The second line should contain a value
+   such as t=23437. That means approximately 23.437 degrees Celsius.
+
+5. Start IQAC using the real sensor:
+
+     python hardware_monitor.py \
+       --interval 5 \
+       --host 0.0.0.0 \
+       --port 8001
+
+   IQAC will print the physical sensor path, temperature, CPU usage, and
+   thermal status. It will continue until Ctrl+C.
+
+6. Find Device A's IP address in another terminal:
+
+     hostname -I
+
+   Example: 192.168.1.20
+
+7. From Device B, test the network connection:
+
+     curl http://192.168.1.20:8001/
+     curl http://192.168.1.20:8001/records
+
+   Replace 192.168.1.20 with the real IP address of Device A.
+
+PART 3 - PREPARE DEVICE B (PREDICTION COMPUTER)
+------------------------------------------------
+
+1. Copy the IQAC project to Device B, or copy only the iqac-prediction folder
+   and its model files.
+
+2. Create its environment:
+
+     cd /path/to/iqac/iqac-prediction
+     python3 -m venv .venv
+     source .venv/bin/activate
+     python -m pip install -r requirements.txt
+
+3. Run one synchronization test:
+
+     python sync.py \
+       --monitor-url http://192.168.1.20:8001 \
+       --device-id raspberry-pi-01
+
+   A successful response says how many daily records were synchronized.
+   The device ID must stay the same every time for the same physical device.
+
+4. Start continuous synchronization in one terminal:
+
+     python main.py \
+       --collect-url http://192.168.1.20:8001 \
+       --device-id raspberry-pi-01 \
+       --interval 60
+
+   This downloads the compact daily records every 60 seconds and stores them
+   in Device B's local telemetry.db. It does not require a shared folder.
+
+5. Start the RUL API in a second Device B terminal:
+
+     cd /path/to/iqac/iqac-prediction
+     source .venv/bin/activate
+     python main.py --serve --port 8000
+
+6. Request the prediction:
+
+     curl http://127.0.0.1:8000/devices/raspberry-pi-01/rul
+
+   You can also open that URL in a browser on Device B.
+
+WHAT HAPPENS DURING NORMAL OPERATION
+------------------------------------
+
+Every five seconds on Device A:
+
+  1. DS18B20 measures temperature.
+  2. Agent 1 reads CPU/system telemetry.
+  3. IQAC classifies the thermal state and runs its decision logic.
+  4. The reading is aggregated into monitoring_records.db.
+  5. A high-temperature event is stored as a spike.
+  6. GET /records makes the summaries available over the network.
+
+Every 60 seconds on Device B:
+
+  1. iqac-prediction downloads /records from Device A.
+  2. Device B upserts the daily summaries into telemetry.db.
+  3. The RUL endpoint calculates health score, estimated hours, and risk level.
+
+The current RUL formula is a demonstration model based mainly on average
+temperature, operating time, and spike count. It is not yet a certified
+failure prediction for industrial safety. Calibrate it with real operating
+history and known maintenance/failure events before using it operationally.
+
+CHECKING THE DATA
+-----------------
+
+On Device A:
+
+  curl http://127.0.0.1:8001/records
+
+On Device B:
+
+  curl http://127.0.0.1:8000/devices/raspberry-pi-01/metrics
+  curl http://127.0.0.1:8000/devices/raspberry-pi-01/rul
+
+The first RUL result may be uninteresting because the model needs history.
+Leave Device A running for hours or days so daily averages become meaningful.
+
+TROUBLESHOOTING
+---------------
+
+No sensor file:
+  Enable 1-Wire, reboot, check the three wires, and confirm the resistor.
+
+CRC check failed:
+  The sensor reading is unreliable. Check power, ground, data wiring, and
+  cable length. Do not use the value until the first line ends in YES.
+
+Connection refused:
+  Confirm hardware_monitor.py is running, use Device A's LAN IP, check port
+  8001, and make sure the two devices are on the same network.
+
+Works on Device A but not Device B:
+  Run curl from Device B. Do not use 127.0.0.1 for Device A; that address
+  means the current computer itself.
+
+No RUL data:
+  Run sync.py successfully first, then use the exact same device ID in the
+  RUL URL.
+
+Temperature looks wrong:
+  Compare the raw DS18B20 value with a trusted thermometer. Check that the
+  sensor is not touching a hot regulator or exposed to direct sunlight.
+
+NEXT HARDWARE STEPS
+-------------------
+
+After the DS18B20 workflow works:
+
+  1. Add a fan tachometer and validate RPM readings.
+  2. Add a current/voltage sensor such as INA219 through I2C.
+  3. Add vibration or humidity sensors if relevant to the device.
+  4. Add actuators only after sensor values are stable and logged.
+  5. Keep a backup control path so a network or software failure leaves the
+     hardware in a safe state.
+
+Do not start with all sensors and actuators at once. One sensor, one test, and
+one recorded result at a time makes faults easy to find.
+
+
+DEVICE A FIELD MANUAL
+=====================
+
+This section explains Device A in more detail. Device A is the edge device
+that is physically near the equipment. It collects measurements, runs the
+fast local safety logic, and publishes small summaries. Device B is not needed
+for local monitoring or local safety decisions; it is used for history and
+RUL analysis.
+
+WHAT DEVICE A SHOULD BE
+-----------------------
+
+Use a Raspberry Pi 4/5, an industrial Raspberry Pi, or another Linux gateway
+with a stable power supply. The gateway should have:
+
+  - wired Ethernet when possible, or reliable Wi-Fi
+  - enough storage for the IQAC code and SQLite databases
+  - a clock synchronized with NTP
+  - physical access to the equipment sensors
+  - a fixed DHCP lease or static IP address
+
+Do not use a temporary laptop as the final edge device. It is fine for a
+prototype, but an IoT gateway should restart automatically after power loss
+and should not depend on an open terminal.
+
+DEVICE A SOFTWARE RESPONSIBILITIES
+----------------------------------
+
+Device A performs the time-sensitive work:
+
+  - reads sensors at the configured interval
+  - evaluates thermal and equipment state
+  - executes only the local actions that you explicitly connect
+  - stores compact daily metrics and spike events
+  - exposes GET /records to Device B
+
+Device A does not need to send every raw sample to Device B. This saves
+bandwidth and keeps the prediction database manageable. The local agent
+history databases retain more detailed learning history on Device A.
+
+SUPPORTED DEVICE A SENSOR LEVELS
+--------------------------------
+
+Level 1, recommended first:
+  DS18B20 temperature sensor through Linux 1-Wire. Run hardware_monitor.py.
+
+Level 2, operating-system telemetry:
+  CPU load, memory, process count, CPU frequency, battery, and hardware
+  temperatures exposed by psutil. Run run.py or simulation.py.
+
+Level 3, physical equipment sensors:
+  fan tachometer, INA219/INA226 current and voltage, ADS1115 ADC, vibration,
+  humidity, pressure, or an Arduino/PLC gateway. These require a callback in
+  an agent or a dedicated adapter module. Add one sensor and test it at a
+  time.
+
+Before trusting a new sensor, record its raw value for at least 10 minutes,
+compare it with a known-good meter, and confirm that unplugging the sensor
+creates an obvious error instead of a believable false value.
+
+INSTALL DEVICE A AS A SERVICE
+-----------------------------
+
+After the manual command works, run it with systemd so it starts after
+reboot. Replace /opt/iqac with the real project directory and iqac with the
+Linux username that owns the installation.
+
+Create /etc/systemd/system/iqac-hardware.service:
+
+  [Unit]
+  Description=IQAC physical IoT monitor
+  After=network-online.target
+  Wants=network-online.target
+
+  [Service]
+  Type=simple
+  User=iqac
+  WorkingDirectory=/opt/iqac
+  ExecStart=/opt/iqac/.venv/bin/python /opt/iqac/hardware_monitor.py --interval 5 --host 0.0.0.0 --port 8001
+  Restart=always
+  RestartSec=10
+  NoNewPrivileges=true
+
+  [Install]
+  WantedBy=multi-user.target
+
+Then run:
+
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now iqac-hardware.service
+  sudo systemctl status iqac-hardware.service
+
+View live service logs:
+
+  sudo journalctl -u iqac-hardware.service -f
+
+If you use a sensor ID, add it to ExecStart:
+
+  ... hardware_monitor.py --sensor-id 28-00000abcdef --interval 5 ...
+
+Do not enable the service until the foreground command has successfully read
+the sensor. A service only makes a correct command restart automatically; it
+does not repair wiring or configuration.
+
+NETWORK SETUP FOR DEVICE A
+--------------------------
+
+Give Device A a predictable address. The preferred method is a DHCP
+reservation in the router using the gateway MAC address. A static address can
+also be configured in the operating system, but use an address outside the
+router's normal DHCP pool and document it.
+
+Record these values in your project notes:
+
+  Device name: raspberry-pi-01
+  Device A IP: 192.168.1.20
+  Records port: 8001
+  Sensor ID: 28-xxxxxxxxxxxx
+  Sample interval: 5 seconds
+  Spike temperature: 85 C
+
+From Device B, test all of these separately:
+
+  ping 192.168.1.20
+  curl --fail http://192.168.1.20:8001/
+  curl --fail http://192.168.1.20:8001/records
+
+If a firewall is enabled on Device A, allow TCP port 8001 only from Device B
+or from the trusted monitoring subnet. Do not expose port 8001 directly to
+the public internet.
+
+DEVICE A STARTUP CHECKLIST
+--------------------------
+
+Run this checklist after installation and after any hardware change:
+
+  [ ] The sensor has the correct voltage and ground.
+  [ ] The sensor appears under /sys/bus/w1/devices/.
+  [ ] The raw file CRC line ends with YES.
+  [ ] The temperature agrees with a reference thermometer.
+  [ ] hardware_monitor.py prints a changing physical reading.
+  [ ] /records returns JSON from localhost.
+  [ ] Device B can reach /records over the network.
+  [ ] A deliberate warm test creates a spike only at the chosen threshold.
+  [ ] The SQLite database changes while the monitor is running.
+  [ ] The service restarts after a controlled `sudo systemctl restart`.
+  [ ] The system returns to monitoring after a controlled reboot.
+
+Do not heat the sensor beyond its rated range to test an alert. A warm water
+container or a safe low-temperature test is preferable. Never use a flame,
+short circuit, or exposed mains voltage as a test method.
+
+BACKUP AND MAINTENANCE ON DEVICE A
+----------------------------------
+
+Back up configuration and history separately:
+
+  - source code and config.yaml can be copied to a repository
+  - monitoring_records.db contains compact records for synchronization
+  - agent history databases contain local learning history
+  - generated .pyc files and temporary files are not backups
+
+Check storage periodically with `df -h`. SQLite databases should be copied
+only when the service is stopped, or using a SQLite-aware backup procedure.
+Keep the operating system patched, rotate credentials, and verify the clock.
+An incorrect clock produces incorrect daily boundaries and operating hours.
+
+FAIL-SAFE BEHAVIOR
+------------------
+
+The local device must remain safe if Wi-Fi, Device B, Python, or the RUL API
+stops. Design the physical equipment so:
+
+  - a disconnected network does not disable local protection
+  - a software restart leaves actuators in a known safe state
+  - a fan failure produces a conservative fallback or hardware alarm
+  - a sensor error is treated as an error, not as a normal temperature
+  - manual shutdown remains possible
+
+The current DS18B20 monitor records an error and retries its next cycle. It
+does not control an external fan or emergency relay. Add actuator logic only
+after a separate hardware safety review and bench test.
+
+ADDING A DIFFERENT IOT SENSOR
+-----------------------------
+
+Use this sequence for every new sensor:
+
+  1. Identify its voltage, protocol, range, and accuracy from its datasheet.
+  2. Connect power and ground with the gateway switched off.
+  3. Test the vendor example before connecting IQAC.
+  4. Write a small read function that returns one numeric value and raises an
+     error when the device is disconnected or invalid.
+  5. Register that function through the matching agent callback.
+  6. Log raw values and source names before enabling an actuator.
+  7. Set a physically safe alert threshold and verify it without damaging the
+     equipment.
+
+For I2C devices, check the address with `i2cdetect -y 1` where appropriate.
+Do not assume every board uses I2C address 0x40; address conflicts are common.
+For analog sensors, use an ADC rather than connecting a voltage above the
+GPIO/ADC input limit. For industrial signals such as 12 V, 24 V, 4-20 mA, or
+RS-485, use a properly rated isolated interface.
+
+WHEN DEVICE B IS OFFLINE
+------------------------
+
+Device A continues collecting local records. The prediction computer can
+catch up later because /records returns the stored daily summaries. Keep the
+same device ID when synchronizing. Do not delete monitoring_records.db while
+Device A is offline from Device B.
+
+WHEN DEVICE A IS OFFLINE
+------------------------
+
+Device B cannot calculate new information. It can still show the last
+synchronized result, but that result is stale. Treat the timestamp and
+synchronized_at fields as important status indicators. Restore Device A,
+verify /records, then run sync.py manually before restarting continuous
+collection.
+
+PROTOTYPE TO PRODUCTION PATH
+----------------------------
+
+Prototype:
+  One DS18B20, foreground process, trusted LAN, Agent 1, manual checks.
+
+Pilot:
+  Fixed IP reservation, systemd service, database backup, firewall rule,
+  Device B collector, reference thermometer comparison, several days of
+  history, and documented alert response.
+
+Production:
+  Industrial-rated sensors and power supplies, electrical isolation,
+  authenticated and encrypted transport, monitoring of the monitor itself,
+  tested recovery procedures, calibrated models, and a human-approved
+  maintenance response. The current HTTP records endpoint has no
+  authentication or TLS, so it should be treated as pilot-only until secured.

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent3 - System Voltage & Electrical Power AI Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: rgba(20, 29, 46, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 40%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 25px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-voltage { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-power { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+        .badge-surge { background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .profile-selector { display: flex; gap: 8px; }
+
+        .btn-profile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-green);
+        }
+
+        .btn-profile.active {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            color: #000;
+            border-color: transparent;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-value { font-size: 2.2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .stat-unit { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-NORMAL { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .status-UNDER_VOLTAGE_SAG { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+        .status-BROWNOUT_RISK, .status-OVER_VOLTAGE_SURGE, .status-CRITICAL_BATTERY { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .chart-container { position: relative; height: 320px; width: 100%; }
+
+        .bar-bg { height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+        .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+
+        .terminal-box {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            height: 140px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #38edf8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-transient {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fde68a;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-transient:hover { background: rgba(245, 158, 11, 0.4); }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>
+                ⚡ AGENT3 System Voltage & Electrical Power AI
+                <span class="badge badge-voltage">Multi-Rail Sensing</span>
+                <span class="badge badge-power">Brownout Protection</span>
+                <span class="badge badge-surge">Surge Guard</span>
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                Model-Based Utility-Based Learning Agent monitoring VCore, 12V, 5V, 3.3V, & Battery voltage tolerances.
+            </p>
+        </div>
+        <div class="profile-selector">
+            <button class="btn-profile {% if active_profile == 'laptop' %}active{% endif %}" onclick="setProfile('laptop')">💻 Laptop</button>
+            <button class="btn-profile {% if active_profile == 'computer' %}active{% endif %}" onclick="setProfile('computer')">🖥️ Desktop</button>
+            <button class="btn-profile {% if active_profile == 'drone' %}active{% endif %}" onclick="setProfile('drone')">🛸 Drone LiPo</button>
+            <button class="btn-profile {% if active_profile == 'iot' %}active{% endif %}" onclick="setProfile('iot')">📡 IoT ADC</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- VCore Voltage Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">
+                CPU VCore Voltage
+                <span id="voltage-status-pill" class="status-pill status-NORMAL">NORMAL</span>
+            </div>
+            <div class="stat-value" id="val-vcore" style="color: var(--accent-green);">-- <span class="stat-unit">V</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Tolerance Deviation: <strong id="val-dev" style="color: var(--accent-cyan);">0.0%</strong>
+            </p>
+        </div>
+
+        <!-- System Power (Watts) Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Electrical Power Draw</div>
+            <div class="stat-value" id="val-watts" style="color: var(--accent-purple);">-- <span class="stat-unit">Watts</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                CPU Load: <span id="val-cpu">--%</span>
+            </p>
+        </div>
+
+        <!-- Multi-Rail Status Card (12V / 5V / 3.3V) -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Multi-Rail Power Supply</div>
+            <div style="font-size: 0.9rem; margin-top: 4px;">
+                <div>+12V Rail: <strong id="val-12v" style="color: var(--accent-cyan);">-- V</strong></div>
+                <div style="margin-top: 4px;">+5V Rail: <strong id="val-5v" style="color: var(--accent-green);">-- V</strong></div>
+                <div style="margin-top: 4px;">+3.3V Rail: <strong id="val-33v" style="color: #c084fc;">-- V</strong></div>
+            </div>
+        </div>
+
+        <!-- Battery Cell Voltage Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Battery Cell Voltage</div>
+            <div class="stat-value" id="val-battery" style="color: var(--accent-cyan);">-- <span class="stat-unit">V</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Status: <span id="val-charging">Discharging</span>
+            </p>
+        </div>
+
+        <!-- Main Real-time Voltage Waveform Oscilloscope Graph -->
+        <div class="card" style="grid-column: span 8;">
+            <div class="card-title">
+                Real-Time Voltage Waveform Scope
+                <div>
+                    <button class="btn-transient" onclick="injectTransient('sag')">📉 Inject Voltage Sag</button>
+                    <button class="btn-transient btn-danger" onclick="injectTransient('surge')">📈 Inject Surge</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="voltageChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Utility Breakdown & Protection Actions Card -->
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">Utility & Regulatory Actions</div>
+
+            <div style="font-size: 0.85rem; margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <div>Action Chosen: <strong id="val-action" style="color: var(--accent-cyan);">STABLE_PASSIVE</strong></div>
+                <div style="margin-top: 4px;">Max Utility U(S, A*): <strong id="val-utility-score" style="color: var(--accent-green);">1.0</strong></div>
+            </div>
+
+            <div style="font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Voltage Stability Utility</span>
+                    <strong id="u-stability">1.0</strong>
+                </div>
+                <div class="bar-bg" style="margin-bottom: 12px;">
+                    <div class="bar-fill" id="bar-u-stability" style="width: 100%; background: #10b981;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Brownout / Surge Safety Utility</span>
+                    <strong id="u-safety">1.0</strong>
+                </div>
+                <div class="bar-bg" style="margin-bottom: 12px;">
+                    <div class="bar-fill" id="bar-u-safety" style="width: 100%; background: #00f2fe;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Power Efficiency Utility</span>
+                    <strong id="u-efficiency">1.0</strong>
+                </div>
+                <div class="bar-bg">
+                    <div class="bar-fill" id="bar-u-efficiency" style="width: 100%; background: #a855f7;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Console Log -->
+        <div class="card" style="grid-column: span 12;">
+            <div class="card-title">Agent 3 Voltage Regulatory Console</div>
+            <div class="terminal-box" id="terminal-log">
+                [Agent3 Init] System Voltage & Electrical Power AI Agent started monitoring power rails...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('voltageChart').getContext('2d');
+        const voltageChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'VCore (V)',
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        data: [],
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.25,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '12V Rail (V)',
+                        borderColor: '#00f2fe',
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Power (Watts)',
+                        borderColor: '#a855f7',
+                        borderDash: [4, 4],
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                    y: {
+                        position: 'left',
+                        title: { display: true, text: 'VCore (Volts)', color: '#10b981' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#10b981' }
+                    },
+                    y1: {
+                        position: 'right',
+                        title: { display: true, text: '12V Rail (V)', color: '#00f2fe' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#00f2fe' }
+                    },
+                    y2: {
+                        position: 'right',
+                        min: 0,
+                        title: { display: true, text: 'Watts', color: '#a855f7' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#a855f7' }
+                    }
+                },
+                plugins: { legend: { labels: { color: '#f3f4f6' } } }
+            }
+        });
+
+        function logMessage(msg) {
+            const term = document.getElementById('terminal-log');
+            const timestamp = new Date().toLocaleTimeString();
+            term.innerHTML += `<div>[${timestamp}] ${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        async function setProfile(profileName) {
+            try {
+                const res = await fetch(`/api/profile/${profileName}`, { method: 'POST' });
+                if (res.ok) {
+                    logMessage(`Voltage Profile switched to: ${profileName.toUpperCase()}`);
+                    document.querySelectorAll('.btn-profile').forEach(b => b.classList.remove('active'));
+                    event.target.classList.add('active');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function injectTransient(type) {
+            logMessage(`⚡ Injecting Voltage ${type.toUpperCase()} transient into system rails...`);
+            await fetch(`/api/inject_transient?type=${type}`, { method: 'POST' });
+        }
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/telemetry`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => logMessage('Connected to Agent 3 Live Telemetry Stream.');
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const b = data.belief || {};
+
+            document.getElementById('val-vcore').innerHTML = `${b.vcore_volts || 0} <span class="stat-unit">V</span>`;
+            document.getElementById('val-dev').innerText = `${b.tolerance_deviation_pct || 0}%`;
+            document.getElementById('val-watts').innerHTML = `${b.power_watts || 0} <span class="stat-unit">W</span>`;
+            document.getElementById('val-cpu').innerText = `${data.telemetry.cpu_percent}%`;
+
+            document.getElementById('val-12v').innerText = `${b.v12_volts || 0} V`;
+            document.getElementById('val-5v').innerText = `${b.v5_volts || 0} V`;
+            document.getElementById('val-33v').innerText = `${b.v33_volts || 0} V`;
+            document.getElementById('val-battery').innerHTML = `${b.battery_volts || 0} <span class="stat-unit">V</span>`;
+
+            // Voltage status pill
+            const pill = document.getElementById('voltage-status-pill');
+            pill.className = `status-pill status-${b.voltage_status || 'NORMAL'}`;
+            pill.innerText = b.voltage_status || 'NORMAL';
+
+            document.getElementById('val-action').innerText = data.protection.executed_action;
+            document.getElementById('val-utility-score').innerText = data.utility.best_utility;
+
+            if (data.utility && data.utility.breakdown) {
+                const bd = data.utility.breakdown;
+                document.getElementById('u-stability').innerText = bd.u_stability;
+                document.getElementById('bar-u-stability').style.width = `${bd.u_stability * 100}%`;
+                document.getElementById('u-safety').innerText = bd.u_safety;
+                document.getElementById('bar-u-safety').style.width = `${bd.u_safety * 100}%`;
+                document.getElementById('u-efficiency').innerText = bd.u_efficiency;
+                document.getElementById('bar-u-efficiency').style.width = `${bd.u_efficiency * 100}%`;
+            }
+
+            if (data.history_stream) {
+                const labels = data.history_stream.map(h => new Date(h.timestamp * 1000).toLocaleTimeString());
+                const vcores = data.history_stream.map(h => h.vcore_volts);
+                const v12s = data.history_stream.map(h => h.v12_volts);
+                const watts = data.history_stream.map(h => h.power_watts);
+
+                voltageChart.data.labels = labels;
+                voltageChart.data.datasets[0].data = vcores;
+                voltageChart.data.datasets[1].data = v12s;
+                voltageChart.data.datasets[2].data = watts;
+                voltageChart.update();
+            }
+
+            if (data.protection && data.protection.message) {
+                logMessage(`[Voltage Protection] ${data.protection.message} (Utility: ${data.utility.best_utility})`);
+            }
+        };
+
+        ws.onclose = () => logMessage('Telemetry Stream closed.');
+    </script>
+</body>
+</html>

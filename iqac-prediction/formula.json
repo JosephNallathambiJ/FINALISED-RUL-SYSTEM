@@ -1,0 +1,69 @@
+{
+  "remaining_useful_life_formulas": {
+    "target_labeling": {
+      "piecewise_linear_target": {
+        "latex": "y_t = \\min(RUL_{max}, T_{fail} - t)",
+        "expression": "min(RUL_max, T_fail - t)",
+        "description": "Caps early-life RUL to keep healthy phases constant and linearly degrades after the wear threshold.",
+        "variables": {
+          "y_t": "Target RUL label at current time t",
+          "RUL_max": "Maximum early-life threshold cap",
+          "T_fail": "Total time step or cycle at failure",
+          "t": "Current time step or cycle"
+        }
+      }
+    },
+    "degradation_forecasting": {
+      "linear_degradation": {
+        "health_indicator_latex": "S_t = \\theta \\cdot t + \\beta",
+        "rul_latex": "RUL(t) = \\frac{D_{crit} - S_t}{\\theta}",
+        "rul_expression": "(D_crit - S_t) / theta",
+        "description": "Calculates RUL assuming a constant rate of degradation over time.",
+        "variables": {
+          "S_t": "Current health indicator reading at time t",
+          "D_crit": "Critical threshold value representing failure",
+          "theta": "Linear degradation rate slope",
+          "beta": "Initial baseline offset",
+          "RUL_t": "Estimated remaining useful life at time t"
+        }
+      },
+      "exponential_degradation": {
+        "health_indicator_latex": "S_t = \\phi \\cdot \\exp(\\theta \\cdot t) + \\epsilon_t",
+        "rul_latex": "RUL(t) = \\frac{\\ln(D_{crit}) - \\ln(S_t)}{\\theta}",
+        "rul_expression": "(ln(D_crit) - ln(S_t)) / theta",
+        "description": "Calculates RUL assuming exponential acceleration of component wear over time.",
+        "variables": {
+          "S_t": "Current health indicator reading at time t",
+          "D_crit": "Critical threshold value representing failure",
+          "phi": "Initial scaling factor",
+          "theta": "Exponential degradation rate coefficient",
+          "epsilon_t": "Zero-mean noise term",
+          "RUL_t": "Estimated remaining useful life at time t"
+        }
+      }
+    },
+    "loss_functions": {
+      "root_mean_squared_error": {
+        "latex": "RMSE = \\sqrt{\\frac{1}{N} \\sum_{i=1}^{N} (\\hat{y}_i - y_i)^2}",
+        "expression": "sqrt(mean((y_hat - y)**2))",
+        "description": "Standard symmetric loss function evaluating average prediction magnitude error.",
+        "variables": {
+          "y_hat_i": "Predicted RUL for sample i",
+          "y_i": "Actual RUL label for sample i",
+          "N": "Total number of evaluation samples"
+        }
+      },
+      "asymmetric_penalty_loss": {
+        "latex": "L = \\frac{1}{N} \\sum_{i=1}^{N} l_i, \\quad l_i = \\begin{cases} \\exp\\left(-\\frac{\\hat{y}_i - y_i}{a_1}\\right) - 1 & \\text{if } \\hat{y}_i - y_i < 0 \\\\ \\exp\\left(\\frac{\\hat{y}_i - y_i}{a_2}\\right) - 1 & \\text{if } \\hat{y}_i - y_i \\ge 0 \\end{cases}",
+        "description": "Penalizes overestimating RUL (late predictions) exponentially harder than underestimating (early predictions).",
+        "variables": {
+          "y_hat_i": "Predicted RUL for sample i",
+          "y_i": "Actual RUL label for sample i",
+          "a1": "Penalty scaling factor for early predictions (underestimation, e.g., 13)",
+          "a2": "Penalty scaling factor for late predictions (overestimation, e.g., 10)",
+          "N": "Total number of samples"
+        }
+      }
+    }
+  }
+}

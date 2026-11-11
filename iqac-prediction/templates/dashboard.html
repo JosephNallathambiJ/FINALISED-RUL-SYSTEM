@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQAC - Scientific CPU Degradation & RUL Prognostics Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --card-bg: rgba(20, 27, 45, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #9d4edd;
+            --status-normal: #10b981;
+            --status-warm: #f59e0b;
+            --status-critical: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 24px;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(0, 242, 254, 0.07) 0%, transparent 45%),
+                radial-gradient(circle at 90% 90%, rgba(157, 78, 221, 0.07) 0%, transparent 45%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 28px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .select-input {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            border: none;
+            color: #0b0f19;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Scientific Disclaimer Banner */
+        .disclaimer-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 0.82rem;
+            color: #fcd34d;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Methodology Badges */
+        .badge {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-live { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .badge-hist { background: rgba(79, 172, 254, 0.2); color: #60a5fa; border: 1px solid rgba(79, 172, 254, 0.4); }
+        .badge-model { background: rgba(157, 78, 221, 0.2); color: #c084fc; border: 1px solid rgba(157, 78, 221, 0.4); }
+        .badge-ai { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+        /* Metric Grid */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 18px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-sub {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Charts Section */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Diagnostic & Limitations Section */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .report-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #d1d5db;
+            max-height: 320px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .limitations-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.82rem;
+        }
+
+        .limitations-list li {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--status-warm);
+            border-radius: 4px;
+            color: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div>
+            <h1>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    <rect x="9" y="9" width="6" height="6"/>
+                    <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+                    <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+                    <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+                    <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+                </svg>
+                IQAC Prognostics & RUL Engine
+            </h1>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+                Scientifically Defensible CPU Degradation Modeling & Agentic Health Diagnostics
+            </p>
+        </div>
+        <div class="header-controls">
+            <select id="deviceSelector" class="select-input" onchange="loadDashboard()">
+                <option value="target-cpu">Device: target-cpu</option>
+            </select>
+            <select id="modeSelector" class="select-input" onchange="loadDashboard()">
+                <option value="physics">Mode: Physics-Based</option>
+                <option value="hybrid">Mode: Hybrid (Physics + ML)</option>
+                <option value="ml">Mode: Pure ML</option>
+            </select>
+            <select id="profileSelector" class="select-input" onchange="loadDashboard()">
+                <option value="desktop">Profile: Desktop CPU</option>
+                <option value="server">Profile: Server CPU</option>
+                <option value="laptop">Profile: Laptop CPU</option>
+                <option value="iot">Profile: IoT Embedded</option>
+            </select>
+            <button class="btn" onclick="runAiDiagnosis()">Run AI Diagnosis</button>
+        </div>
+    </header>
+
+    <!-- Scientific Epistemic Banner -->
+    <div class="disclaimer-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>
+            <strong>Scientific Integrity Guarantee:</strong> RUL outputs are mathematical degradation estimates based on Arrhenius/Coffin-Manson kinetics and machine learning inference. Unless calibrated against destructive silicon testing, estimates are heuristic and never represented as certified physical facts.
+        </span>
+    </div>
+
+    <!-- Live & Estimated KPI Grid -->
+    <section class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-header">
+                <span>Estimated RUL</span>
+                <span class="badge badge-model">Model Estimate</span>
+            </div>
+            <div class="metric-value" id="valRulHours">-- hrs</div>
+            <div class="metric-sub" id="valRulDays">≈ -- days remaining</div>
+            <div class="metric-sub" id="valConfidenceBand" style="color: var(--accent-cyan);">CI (90%): [-- , --] hrs</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span>Health / Degradation</span>
+                <span class="badge badge-model">Model Estimate</span>
+            </div>
+            <div class="metric-value" id="valHealthPct">-- %</div>
+            <div class="metric-sub" id="valDegradationPct">Cumulative damage: --%</div>
+            <div class="metric-sub">Risk: <strong id="valRiskLevel">--</strong></div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span>Observed Temperature</span>
+                <span class="badge badge-live">Live Sensor</span>
+            </div>
+            <div class="metric-value" id="valAvgTemp">-- °C</div>
+            <div class="metric-sub" id="valTempExtremes">Peak: -- °C | Min: -- °C</div>
+            <div class="metric-sub" id="valSpikeCount">Thermal Spikes (&gt;85°C): 0</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span>Data Quality &amp; Sync</span>
+                <span class="badge badge-hist">Telemetry State</span>
+            </div>
+            <div class="metric-value" id="valDataQuality">--</div>
+            <div class="metric-sub" id="valOperatingHours">Active Uptime: -- hrs</div>
+            <div class="metric-sub" id="valLastSync">Last Telemetry: --</div>
+        </div>
+    </section>
+
+    <!-- Prognostic Visualizations -->
+    <section class="chart-grid">
+        <div class="chart-card">
+            <div class="chart-title">
+                <span>Temperature &amp; Thermal Excursions</span>
+                <span class="badge badge-hist">Historical Telemetry</span>
+            </div>
+            <canvas id="tempChart" height="180"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">
+                <span>Cumulative Degradation &amp; RUL Trajectory</span>
+                <span class="badge badge-model">Model Estimate</span>
+            </div>
+            <canvas id="degradationChart" height="180"></canvas>
+        </div>
+    </section>
+
+    <!-- Diagnostic and Limitations -->
+    <section class="details-grid">
+        <div class="chart-card">
+            <div class="chart-title">
+                <span>Agentic AI Diagnostic Report</span>
+                <span class="badge badge-ai">AI Hypothesis</span>
+            </div>
+            <div class="report-box" id="aiReportBox">Click "Run AI Diagnosis" to query Ollama decision-support agent for evidence-grounded thermal root cause analysis.</div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-title">
+                <span>Model Assumptions &amp; Limitations</span>
+                <span class="badge badge-model">Methodology</span>
+            </div>
+            <ul class="limitations-list" id="limitationsList">
+                <li>No active limitation warnings.</li>
+            </ul>
+        </div>
+    </section>
+
+    <script>
+        let tempChartInstance = null;
+        let degChartInstance = null;
+
+        async function loadDevices() {
+            try {
+                const res = await fetch('/devices');
+                if (res.ok) {
+                    const devices = await res.json();
+                    const sel = document.getElementById('deviceSelector');
+                    sel.innerHTML = '';
+                    if (devices.length === 0) {
+                        sel.innerHTML = '<option value="target-cpu">target-cpu</option>';
+                    } else {
+                        devices.forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d;
+                            opt.textContent = `Device: ${d}`;
+                            sel.appendChild(opt);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load devices", e);
+            }
+        }
+
+        async function loadDashboard() {
+            const devId = document.getElementById('deviceSelector').value || 'target-cpu';
+            const mode = document.getElementById('modeSelector').value;
+            const profile = document.getElementById('profileSelector').value;
+
+            try {
+                const res = await fetch(`/devices/${devId}/rul?mode=${mode}&profile=${profile}`);
+                if (!res.ok) throw new Error("RUL API returned " + res.status);
+                const data = await res.json();
+
+                // Populate KPIs
+                document.getElementById('valRulHours').textContent = data.rul_hours !== null ? `${data.rul_hours.toLocaleString()} hrs` : 'N/A';
+                document.getElementById('valRulDays').textContent = data.rul_days !== null ? `≈ ${data.rul_days.toLocaleString()} days remaining` : 'Insufficient data';
+                
+                if (data.confidence_interval) {
+                    document.getElementById('valConfidenceBand').textContent = `CI (90%): [${data.confidence_interval.lower_hours} , ${data.confidence_interval.upper_hours}] hrs`;
+                } else {
+                    document.getElementById('valConfidenceBand').textContent = 'CI: Uncalibrated';
+                }
+
+                document.getElementById('valHealthPct').textContent = data.health_percentage !== null ? `${data.health_percentage}%` : 'N/A';
+                document.getElementById('valDegradationPct').textContent = data.degradation_percentage !== null ? `Cumulative damage: ${data.degradation_percentage}%` : 'Cumulative damage: N/A';
+                
+                const riskElem = document.getElementById('valRiskLevel');
+                riskElem.textContent = data.risk_level;
+                riskElem.style.color = data.risk_level === 'CRITICAL' ? 'var(--status-critical)' : 
+                                      (data.risk_level === 'HIGH' ? 'var(--status-warm)' : 'var(--status-normal)');
+
+                const metrics = data.device_metrics || {};
+                document.getElementById('valAvgTemp').textContent = metrics.avg_temp !== null && metrics.avg_temp !== undefined ? `${metrics.avg_temp.toFixed(1)} °C` : 'N/A';
+                document.getElementById('valTempExtremes').textContent = `Peak: ${metrics.peak_temp || '--'} °C | Min: ${metrics.min_temp || '--'} °C`;
+                document.getElementById('valSpikeCount').textContent = `Thermal Spikes (>85°C): ${metrics.total_spikes_over_85 || 0}`;
+
+                const qualityElem = document.getElementById('valDataQuality');
+                qualityElem.textContent = data.data_quality;
+                qualityElem.style.color = data.data_quality === 'EXCELLENT' ? 'var(--status-normal)' : 
+                                         (data.data_quality === 'INSUFFICIENT' ? 'var(--status-critical)' : 'var(--status-warm)');
+
+                document.getElementById('valOperatingHours').textContent = `Active Uptime: ${metrics.operating_hours || 0} hrs`;
+                document.getElementById('valLastSync').textContent = `Last Telemetry: ${data.last_telemetry_timestamp ? data.last_telemetry_timestamp.substring(0, 19).replace('T', ' ') : 'None'}`;
+
+                // Populate limitations
+                const limList = document.getElementById('limitationsList');
+                limList.innerHTML = '';
+                if (data.limitations && data.limitations.length > 0) {
+                    data.limitations.forEach(lim => {
+                        const li = document.createElement('li');
+                        li.textContent = lim;
+                        limList.appendChild(li);
+                    });
+                } else {
+                    limList.innerHTML = '<li>Operating within standard calibrated parameters.</li>';
+                }
+
+                // Render Charts
+                renderCharts(devId, data);
+            } catch (err) {
+                console.error("Dashboard update failed:", err);
+            }
+        }
+
+        async function renderCharts(devId, rulData) {
+            try {
+                const histRes = await fetch(`/devices/${devId}/history`);
+                let days = [], temps = [], cpus = [], damages = [];
+                if (histRes.ok) {
+                    const histData = await histRes.json();
+                    days = histData.days || [];
+                    temps = histData.temperatures || [];
+                    cpus = histData.cpu_usages || [];
+                    damages = histData.cumulative_damages || [];
+                }
+
+                if (days.length === 0) {
+                    days = ['Baseline', 'Current'];
+                    temps = [40.0, rulData.device_metrics?.avg_temp || 45.0];
+                    cpus = [20.0, rulData.device_metrics?.cpu_usage_avg || 35.0];
+                    damages = [0.0, rulData.degradation_percentage || 1.0];
+                }
+
+                // Temperature Chart
+                const ctxTemp = document.getElementById('tempChart').getContext('2d');
+                if (tempChartInstance) tempChartInstance.destroy();
+                tempChartInstance = new Chart(ctxTemp, {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [
+                            {
+                                label: 'Avg Temperature (°C)',
+                                data: temps,
+                                borderColor: '#00f2fe',
+                                backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Threshold (85°C)',
+                                data: Array(days.length).fill(85),
+                                borderColor: '#ef4444',
+                                borderDash: [6, 6],
+                                pointRadius: 0,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#9ca3af' } } },
+                        scales: {
+                            x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 20 }
+                        }
+                    }
+                });
+
+                // Degradation Chart
+                const ctxDeg = document.getElementById('degradationChart').getContext('2d');
+                if (degChartInstance) degChartInstance.destroy();
+                degChartInstance = new Chart(ctxDeg, {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [
+                            {
+                                label: 'Cumulative Degradation (%)',
+                                data: damages,
+                                borderColor: '#9d4edd',
+                                backgroundColor: 'rgba(157, 78, 221, 0.15)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Failure Criterion (100%)',
+                                data: Array(days.length).fill(100),
+                                borderColor: '#ef4444',
+                                borderDash: [5, 5],
+                                pointRadius: 0,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { labels: { color: '#9ca3af' } } },
+                        scales: {
+                            x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0, max: 105 }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Chart rendering error:", e);
+            }
+        }
+
+        async function runAiDiagnosis() {
+            const devId = document.getElementById('deviceSelector').value || 'target-cpu';
+            const box = document.getElementById('aiReportBox');
+            box.textContent = "Querying diagnostic decision agent... evaluating telemetry and thermal stresses...";
+            try {
+                const res = await fetch(`/devices/${devId}/diagnose`);
+                if (!res.ok) throw new Error("Diagnosis failed with code " + res.status);
+                const data = await res.json();
+                box.textContent = data.diagnostic_report || JSON.stringify(data, null, 2);
+            } catch (e) {
+                box.textContent = "Error executing AI diagnostic agent: " + e.message;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadDevices();
+            await loadDashboard();
+            // Refresh every 10 seconds
+            setInterval(loadDashboard, 10000);
+        });
+    </script>
+</body>
+</html>
+

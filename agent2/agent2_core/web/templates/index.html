@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent2 - Fan RPM & Active Cooling AI Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #070b14;
+            --card-bg: rgba(18, 25, 41, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 25px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-rpm {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
+
+        .badge-pid {
+            background: rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .badge-dba {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent-orange);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .profile-selector { display: flex; gap: 8px; }
+
+        .btn-profile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-profile.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-unit { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+
+        .gauge-bar-bg {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .gauge-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.4s ease;
+        }
+
+        .terminal-box {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 12px;
+            height: 140px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #38edf8;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-action {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background: rgba(239, 68, 68, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>
+                🌀 AGENT2 Fan RPM & Cooling Control AI
+                <span class="badge badge-rpm">Fan RPM Engine</span>
+                <span class="badge badge-pid">PID Closed-Loop</span>
+                <span class="badge badge-dba">Acoustics & Airflow</span>
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+                Model-Based Utility-Based Learning Agent explicitly managing CPU fan speed, PWM duty cycles, & thermal dissipation.
+            </p>
+        </div>
+        <div class="profile-selector">
+            <button class="btn-profile {% if active_profile == 'laptop' %}active{% endif %}" onclick="setProfile('laptop')">💻 Laptop</button>
+            <button class="btn-profile {% if active_profile == 'computer' %}active{% endif %}" onclick="setProfile('computer')">🖥️ Desktop</button>
+            <button class="btn-profile {% if active_profile == 'drone' %}active{% endif %}" onclick="setProfile('drone')">🛸 Drone ESC</button>
+            <button class="btn-profile {% if active_profile == 'iot' %}active{% endif %}" onclick="setProfile('iot')">📡 IoT Micro Fan</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Fan Speed RPM Gauge Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Fan Tachometer RPM</div>
+            <div class="stat-value" id="val-rpm" style="color: var(--accent-cyan);">-- <span class="stat-unit">RPM</span></div>
+            <div class="gauge-bar-bg">
+                <div class="gauge-bar-fill" id="bar-rpm" style="width: 0%; background: linear-gradient(90deg, #00f2fe, #3b82f6);"></div>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                PWM Duty: <strong id="val-pwm" style="color: #c084fc;">--%</strong>
+            </p>
+        </div>
+
+        <!-- Temperature & PID Target Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">CPU Temperature</div>
+            <div class="stat-value" id="val-temp">-- <span class="stat-unit">°C</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                PID Target Setpoint: <strong id="val-pid-target">-- °C</strong> | Error: <span id="val-pid-error">--</span>
+            </p>
+        </div>
+
+        <!-- Acoustic Noise Level (dBA) Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Acoustic Noise (dBA)</div>
+            <div class="stat-value" id="val-dba" style="color: var(--accent-orange);">-- <span class="stat-unit">dBA</span></div>
+            <div class="gauge-bar-bg">
+                <div class="gauge-bar-fill" id="bar-dba" style="width: 0%; background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);"></div>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                Noise Limit: <span id="val-max-dba">-- dBA</span>
+            </p>
+        </div>
+
+        <!-- Airflow & Fan Health Card -->
+        <div class="card" style="grid-column: span 3;">
+            <div class="card-title">Airflow & Fan Health</div>
+            <div class="stat-value" id="val-cfm" style="color: var(--accent-green);">-- <span class="stat-unit">CFM</span></div>
+            <p style="font-size: 0.85rem; margin-top: 8px;">
+                Health: <span id="val-fan-health" style="font-weight: 700; color: var(--accent-green);">OK</span>
+            </p>
+        </div>
+
+        <!-- Main Fan Speed RPM & Temperature History Graph -->
+        <div class="card" style="grid-column: span 8;">
+            <div class="card-title">
+                Fan RPM vs CPU Temperature & PWM Control
+                <button class="btn-action" onclick="injectThermalSpike()">🔥 Heat Load Spike</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="coolingChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PID & Utility Breakdown Card -->
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">PID & Utility Breakdown</div>
+
+            <div style="font-size: 0.85rem; margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                <div style="font-weight: 600; color: var(--accent-cyan); margin-bottom: 4px;">PID Controller Terms</div>
+                <div>P-Term: <span id="pid-p">0.0</span> | I-Term: <span id="pid-i">0.0</span> | D-Term: <span id="pid-d">0.0</span></div>
+            </div>
+
+            <div style="font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Cooling Safety Utility</span>
+                    <strong id="u-thermal">1.0</strong>
+                </div>
+                <div class="gauge-bar-bg" style="margin-bottom: 12px;">
+                    <div class="gauge-bar-fill" id="bar-u-thermal" style="width: 100%; background: #10b981;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Acoustic Quiet Utility</span>
+                    <strong id="u-noise">1.0</strong>
+                </div>
+                <div class="gauge-bar-bg" style="margin-bottom: 12px;">
+                    <div class="gauge-bar-fill" id="bar-u-noise" style="width: 100%; background: #f59e0b;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>Power Preservation Utility</span>
+                    <strong id="u-power">1.0</strong>
+                </div>
+                <div class="gauge-bar-bg">
+                    <div class="gauge-bar-fill" id="bar-u-power" style="width: 100%; background: #8b5cf6;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Console Log -->
+        <div class="card" style="grid-column: span 12;">
+            <div class="card-title">Agent 2 Active Cooling Log</div>
+            <div class="terminal-box" id="terminal-log">
+                [Agent2 Init] Fan RPM & Active Cooling AI Agent started monitoring hardware...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('coolingChart').getContext('2d');
+        const coolingChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Fan Speed (RPM)',
+                        borderColor: '#00f2fe',
+                        backgroundColor: 'rgba(0, 242, 254, 0.1)',
+                        data: [],
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'CPU Temp (°C)',
+                        borderColor: '#ef4444',
+                        data: [],
+                        borderWidth: 2,
+                        fill: false,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'PWM Duty (%)',
+                        borderColor: '#c084fc',
+                        borderDash: [4, 4],
+                        data: [],
+                        borderWidth: 1.5,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                    y: {
+                        position: 'left',
+                        title: { display: true, text: 'Fan RPM', color: '#00f2fe' },
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#00f2fe' }
+                    },
+                    y1: {
+                        position: 'right',
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: 'Temp (°C) / PWM (%)', color: '#ef4444' },
+                        grid: { drawOnChartArea: false },
+                        ticks: { color: '#ef4444' }
+                    }
+                },
+                plugins: { legend: { labels: { color: '#f3f4f6' } } }
+            }
+        });
+
+        function logMessage(msg) {
+            const term = document.getElementById('terminal-log');
+            const timestamp = new Date().toLocaleTimeString();
+            term.innerHTML += `<div>[${timestamp}] ${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        async function setProfile(profileName) {
+            try {
+                const res = await fetch(`/api/profile/${profileName}`, { method: 'POST' });
+                if (res.ok) {
+                    logMessage(`Cooling Profile switched to: ${profileName.toUpperCase()}`);
+                    document.querySelectorAll('.btn-profile').forEach(b => b.classList.remove('active'));
+                    event.target.classList.add('active');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function injectThermalSpike() {
+            logMessage('🔥 Thermal Spike injected! CPU temp heating up rapidly...');
+            await fetch('/api/thermal_spike', { method: 'POST' });
+        }
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/ws/telemetry`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => logMessage('Connected to Agent 2 Live Telemetry Stream.');
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            document.getElementById('val-rpm').innerHTML = `${data.current_rpm} <span class="stat-unit">RPM</span>`;
+            document.getElementById('bar-rpm').style.width = `${Math.min(100, (data.current_rpm / 5000) * 100)}%`;
+            document.getElementById('val-pwm').innerText = `${data.target_pwm_pct}%`;
+            document.getElementById('val-temp').innerHTML = `${data.temperature_c} <span class="stat-unit">°C</span>`;
+
+            if (data.pid) {
+                document.getElementById('pid-p').innerText = data.pid.p_term;
+                document.getElementById('pid-i').innerText = data.pid.i_term;
+                document.getElementById('pid-d').innerText = data.pid.d_term;
+                document.getElementById('val-pid-error').innerText = `${data.pid.error > 0 ? '+' : ''}${data.pid.error}°C`;
+            }
+
+            document.getElementById('val-dba').innerHTML = `${data.noise_dba} <span class="stat-unit">dBA</span>`;
+            document.getElementById('bar-dba').style.width = `${Math.min(100, (data.noise_dba / 70) * 100)}%`;
+            document.getElementById('val-cfm').innerHTML = `${data.airflow_cfm} <span class="stat-unit">CFM</span>`;
+            document.getElementById('val-fan-health').innerText = data.fan_health;
+
+            if (data.utility && data.utility.breakdown) {
+                const b = data.utility.breakdown;
+                document.getElementById('u-thermal').innerText = b.u_thermal;
+                document.getElementById('bar-u-thermal').style.width = `${b.u_thermal * 100}%`;
+                document.getElementById('u-noise').innerText = b.u_noise;
+                document.getElementById('bar-u-noise').style.width = `${b.u_noise * 100}%`;
+                document.getElementById('u-power').innerText = b.u_power;
+                document.getElementById('bar-u-power').style.width = `${b.u_power * 100}%`;
+            }
+
+            if (data.history_stream) {
+                const labels = data.history_stream.map(h => new Date(h.timestamp * 1000).toLocaleTimeString());
+                const rpms = data.history_stream.map(h => h.current_rpm);
+                const temps = data.history_stream.map(h => h.temperature_c);
+                const pwms = data.history_stream.map(h => h.target_pwm_pct);
+
+                coolingChart.data.labels = labels;
+                coolingChart.data.datasets[0].data = rpms;
+                coolingChart.data.datasets[1].data = temps;
+                coolingChart.data.datasets[2].data = pwms;
+                coolingChart.update();
+            }
+
+            logMessage(`[PID Output] PWM: ${data.target_pwm_pct}% -> RPM: ${data.current_rpm} (Temp: ${data.temperature_c}°C, Noise: ${data.noise_dba} dBA)`);
+        };
+
+        ws.onclose = () => logMessage('Telemetry Stream closed.');
+    </script>
+</body>
+</html>

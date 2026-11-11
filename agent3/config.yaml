@@ -1,0 +1,67 @@
+# Config settings for System Voltage & Electrical Power AI Agent - agent3
+# Monitors VCore, 12V, 5V, 3.3V, Battery voltages, Voltage Sags/Surges, and Power Quality
+
+active_profile: "laptop"
+db_path: "voltage_history.db"
+agent_interval_seconds: 1.5
+
+profiles:
+  laptop:
+    name: "Laptop System Voltage & Power"
+    vcore_nominal: 1.15
+    vcore_min: 0.85
+    vcore_max: 1.35
+    v12_nominal: 12.00
+    v5_nominal: 5.00
+    v33_nominal: 3.30
+    battery_nominal: 11.40
+    battery_critical: 9.90
+    max_tolerance_pct: 5.0
+    power_priority: 0.80
+    stability_priority: 0.90
+    safety_priority: 0.95
+
+  computer:
+    name: "Desktop Workstation Multi-Rail ATX Power"
+    vcore_nominal: 1.25
+    vcore_min: 0.90
+    vcore_max: 1.40
+    v12_nominal: 12.00
+    v5_nominal: 5.00
+    v33_nominal: 3.30
+    battery_nominal: 0.00
+    battery_critical: 0.00
+    max_tolerance_pct: 5.0
+    power_priority: 0.40
+    stability_priority: 0.95
+    safety_priority: 0.90
+
+  drone:
+    name: "Drone LiPo Battery & ESC Voltage Monitor"
+    vcore_nominal: 1.10
+    vcore_min: 0.85
+    vcore_max: 1.30
+    v12_nominal: 14.80             # 4S LiPo battery nominal voltage (14.8V)
+    v5_nominal: 5.00              # Flight Controller BEC 5V
+    v33_nominal: 3.30              # Sensor IC 3.3V
+    battery_nominal: 14.80
+    battery_critical: 13.20        # 3.3V/cell 4S cutoff -> Land Emergency!
+    max_tolerance_pct: 8.0
+    power_priority: 0.85
+    stability_priority: 0.90
+    safety_priority: 1.00
+
+  iot:
+    name: "IoT Micro Sensor Voltage & Solar Charge Node"
+    vcore_nominal: 0.95
+    vcore_min: 0.70
+    vcore_max: 1.20
+    v12_nominal: 0.00
+    v5_nominal: 5.00
+    v33_nominal: 3.30
+    battery_nominal: 3.70          # 1S Li-Ion cell
+    battery_critical: 3.20
+    max_tolerance_pct: 10.0
+    power_priority: 0.95
+    stability_priority: 0.75
+    safety_priority: 0.85

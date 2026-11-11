@@ -1,0 +1,329 @@
+{
+  "monitoring_running": false,
+  "status": "stopped",
+  "cycle": 2,
+  "timestamp": 1793700699.9152231,
+  "readings": [
+    {
+      "agent": "agent1",
+      "result": {
+        "step": 1,
+        "profile": "Laptop / Portable Computer",
+        "telemetry": {
+          "timestamp": 1793700699.895286,
+          "cpu_percent": 0.0,
+          "cpu_per_core": [
+            37.3,
+            28.0,
+            23.5,
+            23.5,
+            42.0,
+            9.6,
+            44.2,
+            18.0
+          ],
+          "cpu_freq_mhz": 4,
+          "cpu_freq_max_mhz": 4,
+          "ram_percent": 87.1,
+          "ram_used_gb": 9.34,
+          "ram_total_gb": 16.0,
+          "battery_percent": 100.0,
+          "is_charging": true,
+          "process_count": 454
+        },
+        "temperature": {
+          "timestamp": 1793700699.8953059,
+          "temperature_celsius": 37.84,
+          "sensor_source": "simulated_thermal_dynamics",
+          "is_custom_attached": false
+        },
+        "belief_state": {
+          "temperature_c": 37.84,
+          "velocity_c_per_sec": 0.0,
+          "acceleration": 0.0,
+          "thermal_status": "NORMAL"
+        },
+        "utility": {
+          "best_action": "PASSIVE",
+          "best_utility": 0.9318,
+          "selected_breakdown": {
+            "u_thermal": 0.8919,
+            "u_perf": 1.0,
+            "u_power": 0.9,
+            "predicted_temp": 37.84,
+            "final_utility": 0.9318
+          },
+          "all_candidates": {
+            "PASSIVE": {
+              "u_thermal": 0.8919,
+              "u_perf": 1.0,
+              "u_power": 0.9,
+              "predicted_temp": 37.84,
+              "final_utility": 0.9318
+            },
+            "COOL_MODERATE": {
+              "u_thermal": 0.8933,
+              "u_perf": 0.95,
+              "u_power": 0.9,
+              "predicted_temp": 37.36,
+              "final_utility": 0.9148
+            },
+            "THROTTLE_LIGHT": {
+              "u_thermal": 0.8939,
+              "u_perf": 0.75,
+              "u_power": 0.9,
+              "predicted_temp": 37.12,
+              "final_utility": 0.8451
+            },
+            "THROTTLE_HEAVY": {
+              "u_thermal": 0.8962,
+              "u_perf": 0.4,
+              "u_power": 0.9,
+              "predicted_temp": 36.34,
+              "final_utility": 0.7235
+            },
+            "EMERGENCY_COOLING": {
+              "u_thermal": 0.8987,
+              "u_perf": 0.2,
+              "u_power": 0.9,
+              "predicted_temp": 35.44,
+              "final_utility": 0.6545
+            }
+          }
+        },
+        "action": {
+          "timestamp": 1793700699.895336,
+          "executed_action": "PASSIVE",
+          "fan_speed_percent": 20.0,
+          "cpu_throttle_percent": 0.0,
+          "action_cooling_effect": 0.0,
+          "message": "System operating normally. Passive thermal equilibrium."
+        },
+        "anomaly": {
+          "is_anomaly": false,
+          "anomaly_type": "NORMAL",
+          "upper_bound_c": 42.5,
+          "current_temp_c": 37.84,
+          "total_anomalies_logged": 0
+        },
+        "learning": {},
+        "ml_prediction": {
+          "model_loaded": false,
+          "agent_name": "agent1",
+          "predicted_label": "N/A",
+          "confidence": 0.0,
+          "explanation": "No saved ML model found for this agent."
+        }
+      }
+    },
+    {
+      "agent": "agent2",
+      "result": {
+        "step": 1,
+        "profile": "Laptop Computer Cooling",
+        "current_rpm": 0,
+        "target_pwm_pct": 0.0,
+        "temperature_c": 41.66,
+        "cpu_percent": 0.0,
+        "airflow_cfm": 0.0,
+        "noise_dba": 22.0,
+        "thermal_status": "NORMAL",
+        "fan_health": "OK",
+        "utility": {
+          "best_target_rpm": 0,
+          "best_utility": 1.0,
+          "breakdown": {
+            "u_thermal": 1.0,
+            "u_noise": 1.0,
+            "u_power": 1.0,
+            "predicted_temp": 39.66,
+            "predicted_dba": 22.0,
+            "final_utility": 1.0
+          }
+        },
+        "pid": {
+          "error": -23.34,
+          "p_term": -58.35,
+          "i_term": -0.35,
+          "d_term": -186.72,
+          "target_pwm_pct": 0.0
+        },
+        "actuator": {
+          "timestamp": 1793700699.901349,
+          "applied_pwm_pct": 0.0,
+          "applied_method": "simulated"
+        },
+        "learning": {},
+        "ml_prediction": {
+          "model_loaded": false,
+          "agent_name": "agent2",
+          "predicted_label": "N/A",
+          "confidence": 0.0,
+          "explanation": "No saved ML model found for this agent."
+        }
+      }
+    },
+    {
+      "agent": "agent3",
+      "result": {
+        "step": 1,
+        "profile": "Laptop System Voltage & Power",
+        "telemetry": {
+          "timestamp": 1793700699.9084501,
+          "cpu_percent": 33.3,
+          "ram_percent": 87.1,
+          "battery_percent": 100.0,
+          "is_charging": true
+        },
+        "rails": {
+          "vcore_volts": 1.14,
+          "v12_volts": 11.95,
+          "v5_volts": 5.02,
+          "v33_volts": 3.3,
+          "battery_volts": 11.4,
+          "current_amps": 30.0,
+          "power_watts": 34.2
+        },
+        "belief": {
+          "vcore_volts": 1.14,
+          "v12_volts": 11.95,
+          "v5_volts": 5.02,
+          "v33_volts": 3.3,
+          "battery_volts": 11.4,
+          "power_watts": 34.2,
+          "voltage_status": "NORMAL",
+          "tolerance_deviation_pct": 0.87
+        },
+        "utility": {
+          "best_action": "STABLE_PASSIVE",
+          "best_utility": 0.997,
+          "breakdown": {
+            "u_stability": 0.9913,
+            "u_safety": 1.0,
+            "u_efficiency": 1.0,
+            "predicted_vcore": 1.14,
+            "final_utility": 0.997
+          }
+        },
+        "protection": {
+          "timestamp": 1793700699.9085078,
+          "executed_action": "STABLE_PASSIVE",
+          "vcore_adjust_delta": 0.0,
+          "message": "[LAPTOP] Multi-rail voltages operating smoothly within \u00b15% tolerance."
+        },
+        "actuator": {
+          "timestamp": 1793700699.908509,
+          "action": "STABLE_PASSIVE",
+          "vcore_delta": 0.0,
+          "applied_method": "simulated"
+        },
+        "learning": {},
+        "ml_prediction": {
+          "model_loaded": false,
+          "agent_name": "agent3",
+          "predicted_label": "N/A",
+          "confidence": 0.0,
+          "explanation": "No saved ML model found for this agent."
+        }
+      }
+    },
+    {
+      "agent": "agent4",
+      "result": {
+        "step": 1,
+        "profile": "Laptop CPU Frequency & Power Governor",
+        "telemetry": {
+          "timestamp": 1793700699.9132118,
+          "cpu_percent": 100.0,
+          "cpu_per_core": [
+            0.0,
+            50.0,
+            50.0,
+            0.0,
+            66.7,
+            0.0,
+            0.0,
+            100.0
+          ],
+          "ram_percent": 87.1,
+          "process_count": 454
+        },
+        "freq_data": {
+          "timestamp": 1793700699.9136992,
+          "freq_mhz": 4.0,
+          "min_freq_mhz": 800,
+          "max_freq_mhz": 3800,
+          "sensor_source": "os_cpufreq"
+        },
+        "belief": {
+          "freq_mhz": 4.0,
+          "cpu_percent": 100.0,
+          "perf_status": "OVERLOAD"
+        },
+        "utility": {
+          "best_freq_mhz": 1800,
+          "best_utility": 0.5786,
+          "breakdown": {
+            "u_perf": 0.3333,
+            "u_power": 0.8075,
+            "final_utility": 0.5786
+          }
+        },
+        "governor": {
+          "timestamp": 1793700699.913717,
+          "target_freq_mhz": 3800.0,
+          "governor_mode": "PERFORMANCE"
+        },
+        "actuator": {
+          "timestamp": 1793700699.913719,
+          "target_freq_mhz": 3800.0,
+          "governor_mode": "PERFORMANCE",
+          "applied_method": "simulated_cpufreq"
+        },
+        "learning": {},
+        "ml_prediction": {
+          "model_loaded": false,
+          "agent_name": "agent4",
+          "predicted_label": "N/A",
+          "confidence": 0.0,
+          "explanation": "No saved ML model found for this agent."
+        }
+      }
+    }
+  ],
+  "records": {
+    "daily": [
+      {
+        "day": "2026-11-03",
+        "reading_count": 775,
+        "temperature_max": 41.3,
+        "temperature_min": 37.84,
+        "valid_temp_count": 6,
+        "valid_voltage_count": 6,
+        "valid_freq_count": 0,
+        "throttling_count": 3,
+        "updated_at": "2026-11-03T10:11:39.914160+00:00",
+        "average_temperature_c": 39.82,
+        "average_cpu_usage": 22.76,
+        "average_fan_rpm": 0.0,
+        "average_voltage_v": 1.134,
+        "average_cpu_freq_mhz": null,
+        "spike_count": 0
+      }
+    ],
+    "spikes": [],
+    "monitoring_duration_hours": 1.139,
+    "hardware_info": {
+      "platform": "Darwin",
+      "platform_release": "27.2.0",
+      "architecture": "arm64",
+      "processor": "arm",
+      "cpu_count_physical": 8,
+      "cpu_count_logical": 8,
+      "cpu_freq_max_mhz": 4,
+      "cpu_freq_min_mhz": 0
+    },
+    "first_seen_at": "2026-11-03T08:31:12.371620+00:00",
+    "last_seen_at": "2026-11-03T10:11:39.914160+00:00"
+  }
+}

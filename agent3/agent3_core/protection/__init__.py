@@ -1,0 +1,1 @@
+"""Voltage Protection Subsystem module."""

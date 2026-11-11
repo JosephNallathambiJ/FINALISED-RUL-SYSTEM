@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent4 - CPU Load & Frequency AI Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f0919;
+            --card-bg: rgba(30, 20, 48, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-purple: #c084fc;
+            --accent-pink: #ec4899;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; margin-bottom: 20px; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; color: var(--accent-purple); }
+        .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; }
+        .card-title { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
+        .stat-value { font-size: 2.2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
+        .terminal-box { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 12px; height: 140px; overflow-y: auto; font-size: 0.8rem; color: var(--accent-purple); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>⚙️ AGENT4 CPU Frequency & Performance AI Agent</h1>
+        <div>Port 8004</div>
+    </div>
+
+    <div class="grid">
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">CPU Core Frequency</div>
+            <div class="stat-value" id="val-freq" style="color: var(--accent-purple);">-- MHz</div>
+        </div>
+
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">CPU Load</div>
+            <div class="stat-value" id="val-load" style="color: var(--accent-pink);">-- %</div>
+        </div>
+
+        <div class="card" style="grid-column: span 4;">
+            <div class="card-title">DVFS Governor Mode</div>
+            <div class="stat-value" id="val-gov" style="font-size: 1.5rem; color: #fff;">POWERSAVE</div>
+        </div>
+
+        <div class="card" style="grid-column: span 12;">
+            <div class="card-title">Real-Time Frequency vs Load</div>
+            <div class="chart-container"><canvas id="cpuChart"></canvas></div>
+        </div>
+
+        <div class="card" style="grid-column: span 12;">
+            <div class="card-title">Execution Console</div>
+            <div class="terminal-box" id="terminal-log">[Agent4 Init] Monitoring CPU core frequency scaling...</div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('cpuChart').getContext('2d');
+        const cpuChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Frequency (MHz)', borderColor: '#c084fc', data: [], borderWidth: 2, yAxisID: 'y' },
+                    { label: 'CPU Load (%)', borderColor: '#ec4899', data: [], borderWidth: 2, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#9ca3af' } },
+                    y: { position: 'left', title: { display: true, text: 'MHz', color: '#c084fc' }, ticks: { color: '#c084fc' } },
+                    y1: { position: 'right', min: 0, max: 100, title: { display: true, text: 'CPU %', color: '#ec4899' }, ticks: { color: '#ec4899' } }
+                }
+            }
+        });
+
+        function logMessage(msg) {
+            const term = document.getElementById('terminal-log');
+            term.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/telemetry`);
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById('val-freq').innerText = `${data.freq_data.freq_mhz} MHz`;
+            document.getElementById('val-load').innerText = `${data.telemetry.cpu_percent}%`;
+            document.getElementById('val-gov').innerText = data.governor.governor_mode;
+
+            if (data.history_stream) {
+                cpuChart.data.labels = data.history_stream.map(h => new Date(h.timestamp * 1000).toLocaleTimeString());
+                cpuChart.data.datasets[0].data = data.history_stream.map(h => h.freq_mhz);
+                cpuChart.data.datasets[1].data = data.history_stream.map(h => h.cpu_percent);
+                cpuChart.update();
+            }
+            logMessage(`Governor Mode: ${data.governor.governor_mode} -> Target Freq: ${data.governor.target_freq_mhz} MHz`);
+        };
+    </script>
+</body>
+</html>

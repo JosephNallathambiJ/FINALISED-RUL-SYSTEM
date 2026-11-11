@@ -1,0 +1,52 @@
+# Agent5 Supervisor Configuration
+supervisor_name: "AgentOps Supervisor v1.0"
+check_interval_seconds: 3.0
+restart_cooldown_seconds: 5.0
+max_restart_attempts: 5
+web_port: 8005
+web_host: "127.0.0.1"
+
+agents:
+  agent1:
+    name: "Thermal Monitor (CPU/IoT)"
+    description: "Model-Based Utility-Based Learning Agent for Temperature Monitoring"
+    icon: "🌡️"
+    script: "../agent1/main.py"
+    working_dir: "../agent1"
+    args: ["--steps", "0"]
+    web_port: 8000
+    health_check_url: "http://127.0.0.1:8000/api/status"
+    critical: true
+
+  agent2:
+    name: "Fan RPM & Cooling Controller"
+    description: "PID-Based Fan RPM and Active Cooling Management Agent"
+    icon: "🌀"
+    script: "../agent2/main.py"
+    working_dir: "../agent2"
+    args: ["--steps", "0"]
+    web_port: 8001
+    health_check_url: "http://127.0.0.1:8001/api/status"
+    critical: true
+
+  agent3:
+    name: "Voltage & Power Monitor"
+    description: "System Voltage Rail and Electrical Safety Agent"
+    icon: "⚡"
+    script: "../agent3/main.py"
+    working_dir: "../agent3"
+    args: ["--steps", "0"]
+    web_port: 8002
+    health_check_url: "http://127.0.0.1:8002/api/status"
+    critical: true
+
+  agent4:
+    name: "CPU Frequency Governor"
+    description: "CPU Dynamic Frequency Scaling and Performance Agent"
+    icon: "⚙️"
+    script: "../agent4/main.py"
+    working_dir: "../agent4"
+    args: ["--steps", "0"]
+    web_port: 8004
+    health_check_url: "http://127.0.0.1:8004/api/status"
+    critical: false

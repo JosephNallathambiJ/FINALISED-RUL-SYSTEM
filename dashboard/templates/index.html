@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  
+  <!-- Modern Industrial Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/style.css">
+  
+  <!-- Lucide Professional Icon Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Industrial Time-Series Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="enterprise-theme">
+
+  <!-- ==============================================================================
+       TOP GLOBAL NAVIGATION BAR
+       ============================================================================== -->
+  <header class="app-topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()" title="Toggle Navigation">
+        <i data-lucide="menu"></i>
+      </button>
+
+      <div class="brand-container">
+        <div class="brand-symbol">
+          <i data-lucide="cpu"></i>
+        </div>
+        <div class="brand-identity">
+          <span class="brand-title">MACHINE LEARNING <span class="brand-accent">FRAMEWORK</span></span>
+          <span class="brand-sub">Physical System Failure Prediction and Reliability Assessment</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Telemetry & Hosting Status Badges -->
+    <div class="topbar-center">
+      <div class="status-chip chip-operational" id="system-status-chip" title="System Health">
+        <span class="status-pulse"></span>
+        <span class="chip-text" id="global-status-text">OPERATIONAL</span>
+      </div>
+
+      <div class="status-chip chip-role" id="role-status-chip" title="Active Machine Role">
+        <span class="chip-label">ROLE:</span>
+        <strong id="topbar-role-val">{{ device_info.role }}</strong>
+      </div>
+
+      <div class="status-chip chip-host" id="server-status-chip" title="Server Hosting State">
+        <span class="chip-label">HOST:</span>
+        <strong id="topbar-server-host">{{ device_info.primary_ip }}:8080</strong>
+      </div>
+
+      <div class="status-chip chip-role" id="topbar-remote-chip" title="Remote Device State">
+        <span id="topbar-remote-text">REMOTE: OFFLINE</span>
+      </div>
+    </div>
+
+    <!-- Topbar Actions & Supervisor State -->
+    <div class="topbar-right">
+      <div class="meas-supervisor-indicator" id="topbar-meas-badge">
+        <span class="meas-led active" id="topbar-meas-led"></span>
+        <span id="topbar-meas-txt">MONITORING ACTIVE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==============================================================================
+       MAIN APPLICATION LAYOUT (4-SECTION NAVIGATION + VIEWPORT)
+       ============================================================================== -->
+  <div class="app-workspace">
+
+    <!-- COMPACT 4-SECTION SIDEBAR -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-scrollable">
+        <div class="nav-section-title">NAVIGATION</div>
+        <ul class="sidebar-menu">
+          <li class="menu-item active" data-view="view-overview" onclick="navigateView('view-overview')">
+            <i data-lucide="layout-dashboard"></i>
+            <span class="menu-label">Overview</span>
+          </li>
+          <li class="menu-item" data-view="view-monitoring" onclick="navigateView('view-monitoring')">
+            <i data-lucide="activity"></i>
+            <span class="menu-label">Monitoring</span>
+          </li>
+          <li class="menu-item" data-view="view-rul" onclick="navigateView('view-rul')">
+            <i data-lucide="hourglass"></i>
+            <span class="menu-label">RUL Prediction</span>
+          </li>
+          <li class="menu-item" data-view="view-devices" onclick="navigateView('view-devices')">
+            <i data-lucide="hard-drive"></i>
+            <span class="menu-label">Devices</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- SIDEBAR FOOTER -->
+      <div class="sidebar-bottom">
+        <div class="network-indicator">
+          <i data-lucide="wifi" class="net-icon"></i>
+          <div class="net-meta">
+            <span class="net-title">HOST IP</span>
+            <span class="net-val" id="sidebar-ip-val">{{ device_info.primary_ip }}</span>
+          </div>
+        </div>
+        <div class="system-clock-display" id="sidebar-live-clock">--:--:-- UTC</div>
+      </div>
+    </aside>
+
+    <!-- WORKSPACE VIEWPORT -->
+    <main class="app-viewport">
+
+      <!-- ==============================================================================
+           SECTION 1: OVERVIEW PAGE
+           ============================================================================== -->
+      <section id="view-overview" class="view-panel active">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h1>System Overview</h1>
+            <p>Real-time physical telemetry, remaining useful life, and hardware health state.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-primary" id="btn-ov-start" onclick="startMonitoringFromOverview()">
+              <i data-lucide="play"></i> START MONITORING
+            </button>
+            <button class="btn btn-secondary" id="btn-ov-stop" onclick="stopMonitoringFromOverview()">
+              <i data-lucide="square"></i> STOP MONITORING
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Main KPI Metrics -->
+        <div class="kpi-grid-6">
+          <!-- 1. CPU Health -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU HEALTH</span>
+              <i data-lucide="shield-check" class="kpi-icon health-accent"></i>
+            </div>
+            <div class="kpi-value text-green" id="ov-health-val">--%</div>
+            <div class="enterprise-progress-bar">
+              <div class="progress-fill fill-green" id="ov-health-bar" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- 2. CPU Utilization -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU UTILIZATION</span>
+              <i data-lucide="cpu" class="kpi-icon util-accent"></i>
+            </div>
+            <div class="kpi-value text-green" id="kpi-util-val">-- %</div>
+            <div class="kpi-sub" id="kpi-util-sub">{{ device_info.cpu_logical_cores }} Logical Cores</div>
+          </div>
+
+          <!-- 3. CPU Temperature -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU TEMPERATURE</span>
+              <i data-lucide="thermometer" class="kpi-icon temp-accent"></i>
+            </div>
+            <div class="kpi-value text-orange" id="kpi-temp-val">-- °C</div>
+            <div class="kpi-sub" id="kpi-temp-sub">Physical Die Sensor</div>
+          </div>
+
+          <!-- 4. Memory (RAM) -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">MEMORY ALLOCATION</span>
+              <i data-lucide="hard-drive" class="kpi-icon mem-accent"></i>
+            </div>
+            <div class="kpi-value text-amber" id="ov-mem-val">-- %</div>
+            <div class="kpi-sub" id="ov-mem-sub">System RAM Active</div>
+          </div>
+
+          <!-- 5. Remaining Useful Life -->
+          <div class="kpi-card highlight-card">
+            <div class="kpi-head">
+              <span class="kpi-label">ESTIMATED RUL</span>
+              <i data-lucide="hourglass" class="kpi-icon rul-accent"></i>
+            </div>
+            <div class="kpi-value text-orange" id="kpi-rul-val">-- hrs</div>
+            <div class="kpi-sub" id="kpi-rul-days-sub">-- operating days</div>
+          </div>
+
+          <!-- 6. Monitoring Status -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">SUPERVISOR STATE</span>
+              <i data-lucide="activity" class="kpi-icon"></i>
+            </div>
+            <div class="kpi-value text-green" id="kpi-monitoring-status">
+              <span id="kpi-monitoring-text">RUNNING</span>
+            </div>
+            <div class="kpi-sub" id="kpi-monitoring-sub">Sampling interval: 5.0s</div>
+          </div>
+        </div>
+
+        <!-- Compact Live Performance Multi-Signal Oscilloscope -->
+        <div class="panel-card" style="margin-top: 1rem;">
+          <div class="card-title-bar">
+            <div class="title-with-icon">
+              <i data-lucide="activity"></i>
+              <h3>Compact Live Performance Instrument</h3>
+            </div>
+            <span class="badge-subtle">Core Temp (°C) vs CPU Load (%) vs Memory (%)</span>
+          </div>
+          <div class="chart-container-std" style="height: 220px;">
+            <canvas id="overview-perf-chart"></canvas>
+            <div class="chart-empty-state" id="overview-perf-empty" style="display: none;">
+              <i data-lucide="clock"></i>
+              <span>Awaiting incoming hardware telemetry stream...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection & Measurement Summaries -->
+        <div class="dashboard-grid-2" style="margin-top: 1rem;">
+          <!-- Current Device Connection -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="network"></i>
+                <h3>Current Device Connection</h3>
+              </div>
+              <button class="btn btn-outline btn-xs" onclick="navigateView('view-devices')">
+                <i data-lucide="settings"></i> Manage Devices
+              </button>
+            </div>
+            <div class="connection-status-summary">
+              <div class="summary-item">
+                <span class="label">Local Device:</span>
+                <strong>{{ device_info.hostname }}</strong>
+              </div>
+              <div class="summary-item">
+                <span class="label">Local IPv4:</span>
+                <span class="font-mono text-orange" id="ov-local-ip">{{ device_info.primary_ip }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Active Role:</span>
+                <span class="badge-subtle" id="ov-role-val">{{ device_info.role }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Remote Device:</span>
+                <span class="connection-indicator-pill" id="ov-remote-pill">
+                  <span class="dot" id="ov-remote-dot"></span>
+                  <span id="ov-remote-status-text">Disconnected</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Measurement Status -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="sliders"></i>
+                <h3>Measurement Status</h3>
+              </div>
+              <span class="badge-status" id="ov-meas-badge">SUPERVISOR ACTIVE</span>
+            </div>
+            <div class="connection-status-summary">
+              <div class="summary-item">
+                <span class="label">Supervisor State:</span>
+                <strong id="ov-meas-state" class="text-green">RUNNING</strong>
+              </div>
+              <div class="summary-item">
+                <span class="label">Sampling Interval:</span>
+                <span class="font-mono" id="ov-meas-interval">5.0 seconds</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Database Storage:</span>
+                <span class="text-sub">telemetry.db (<span id="ov-meas-count">0</span> readings logged)</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Last Reading:</span>
+                <span class="font-mono text-muted" id="ov-meas-last-ts">Active live stream</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================================
+           SECTION 2: MONITORING PAGE
+           ============================================================================== -->
+      <section id="view-monitoring" class="view-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h1>Hardware Telemetry & Monitoring</h1>
+            <p>Real-time physical telemetry streams with direct sampling controls.</p>
+          </div>
+          <!-- Primary Controls Bar -->
+          <div class="monitoring-control-bar">
+            <div class="ctrl-btn-group">
+              <button class="btn btn-primary btn-sm" id="btn-mon-start" onclick="startMeasurements()">
+                <i data-lucide="play"></i> Start
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-mon-pause" onclick="pauseMeasurements()">
+                <i data-lucide="pause"></i> Pause
+              </button>
+              <button class="btn btn-secondary btn-sm" id="btn-mon-resume" onclick="resumeMeasurements()">
+                <i data-lucide="play-circle"></i> Resume
+              </button>
+              <button class="btn btn-danger btn-sm" id="btn-mon-stop" onclick="stopMeasurements()">
+                <i data-lucide="square"></i> Stop
+              </button>
+            </div>
+
+            <div class="interval-selector-group">
+              <label for="mon-interval-select"><i data-lucide="clock" class="inline-icon"></i> Interval:</label>
+              <select id="mon-interval-select" class="industrial-select-sm" onchange="changeSamplingInterval(this.value)">
+                <option value="1">1s</option>
+                <option value="2">2s</option>
+                <option value="5" selected>5s (Default)</option>
+                <option value="10">10s</option>
+                <option value="30">30s</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 Key Metric Cards -->
+        <div class="kpi-grid-5">
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU TEMPERATURE</span>
+              <i data-lucide="thermometer" class="kpi-icon temp-accent"></i>
+            </div>
+            <div class="kpi-value text-orange" id="live-temp-val">-- °C</div>
+            <div class="kpi-sub">On-Die Junction Sensor</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU UTILIZATION</span>
+              <i data-lucide="cpu" class="kpi-icon util-accent"></i>
+            </div>
+            <div class="kpi-value text-green" id="live-util-val">-- %</div>
+            <div class="kpi-sub">Total Multi-Core Load</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">CPU FREQUENCY</span>
+              <i data-lucide="gauge" class="kpi-icon freq-accent"></i>
+            </div>
+            <div class="kpi-value text-blue" id="live-freq-val">-- MHz</div>
+            <div class="kpi-sub">Core Clock Speed</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">MEMORY USAGE</span>
+              <i data-lucide="hard-drive" class="kpi-icon mem-accent"></i>
+            </div>
+            <div class="kpi-value text-amber" id="live-mem-val">-- %</div>
+            <div class="kpi-sub" id="live-mem-gb">Allocated System RAM</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">POWER CONSUMPTION</span>
+              <i data-lucide="zap" class="kpi-icon text-muted"></i>
+            </div>
+            <div class="kpi-value text-sub" id="live-pwr-val">-- W</div>
+            <div class="kpi-sub" id="live-pwr-sub">RAPL / PMU Probe</div>
+          </div>
+        </div>
+
+        <!-- 4 Historical Graphs in 2x2 Grid -->
+        <div class="dashboard-grid-2" style="margin-top: 1rem;">
+          <!-- 1. Temperature Oscilloscope -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="flame"></i>
+                <h3>Temperature Oscilloscope (°C)</h3>
+              </div>
+              <span class="badge-subtle badge-threshold"><i data-lucide="alert-triangle"></i> Threshold: 80°C Limit</span>
+            </div>
+            <div class="chart-container-std">
+              <canvas id="live-temp-chart"></canvas>
+              <div class="chart-empty-state" id="live-temp-empty" style="display: none;">
+                <i data-lucide="thermometer"></i>
+                <span>Collecting temperature telemetry...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. CPU Utilization History -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="activity"></i>
+                <h3>CPU Utilization History (%)</h3>
+              </div>
+              <span class="badge-subtle badge-threshold"><i data-lucide="gauge"></i> Threshold: 90% Load</span>
+            </div>
+            <div class="chart-container-std">
+              <canvas id="live-util-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- 3. CPU Clock Frequency History -->
+          <div class="panel-card" style="margin-top: 1rem;">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="gauge"></i>
+                <h3>CPU Clock Frequency History (MHz)</h3>
+              </div>
+              <span class="badge-subtle">Dynamic DVFS Scaling</span>
+            </div>
+            <div class="chart-container-std">
+              <canvas id="live-freq-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- 4. Memory Utilization History -->
+          <div class="panel-card" style="margin-top: 1rem;">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="hard-drive"></i>
+                <h3>Memory Utilization History (RAM %)</h3>
+              </div>
+              <span class="badge-subtle">System Page Allocation</span>
+            </div>
+            <div class="chart-container-std">
+              <canvas id="live-mem-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Advanced Options: Stress Testing & Hardware Specs -->
+        <div class="accordion-container" style="margin-top: 1rem;">
+          <div class="accordion-header" onclick="toggleAccordion('adv-monitoring-opts')">
+            <div class="accordion-title">
+              <i data-lucide="sliders"></i>
+              <span>Advanced Options: Controlled Stress Testing & Hardware Specs</span>
+            </div>
+            <i data-lucide="chevron-down" id="adv-monitoring-opts-icon"></i>
+          </div>
+          <div class="accordion-content" id="adv-monitoring-opts">
+            <div class="dashboard-grid-2" style="padding-top: 1rem;">
+              <!-- Stress Testing -->
+              <div class="panel-card">
+                <div class="card-title-bar">
+                  <h3>Mode 2 Controlled Bounded Stress Test</h3>
+                </div>
+                <p style="font-size:0.8rem;color:var(--text-sub);margin-bottom:0.75rem;">
+                  Generate controlled computational load to calibrate thermal dissipation under bounded conditions.
+                </p>
+                <div class="form-row-compact" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.4rem;">
+                  <label style="width:140px;font-size:0.75rem;">Target Load (%):</label>
+                  <input type="number" id="stress-target-load" class="industrial-input-sm" value="75" min="20" max="100">
+                </div>
+                <div class="form-row-compact" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.4rem;">
+                  <label style="width:140px;font-size:0.75rem;">Duration (s):</label>
+                  <input type="number" id="stress-target-duration" class="industrial-input-sm" value="25" min="5" max="180">
+                </div>
+                <div class="form-row-compact" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.4rem;">
+                  <label style="width:140px;font-size:0.75rem;">Thermal Cutoff (°C):</label>
+                  <input type="number" id="stress-cutoff-temp" class="industrial-input-sm" value="85.0" min="60" max="95">
+                </div>
+                <div class="action-row" style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+                  <button class="btn btn-warning btn-sm" onclick="startStressTest()"><i data-lucide="zap"></i> Start Stress Test</button>
+                  <button class="btn btn-secondary btn-sm" onclick="stopStressTest()"><i data-lucide="square"></i> Abort</button>
+                </div>
+                <div id="stress-live-status-box" style="display:none;margin-top:0.75rem;" class="badge-status"></div>
+              </div>
+
+              <!-- Hardware Specs -->
+              <div class="panel-card">
+                <div class="card-title-bar">
+                  <h3>Host Hardware Details</h3>
+                </div>
+                <div class="kv-list">
+                  <div class="kv-row"><span>Platform:</span><strong id="inv-platform">{{ device_info.platform }}</strong></div>
+                  <div class="kv-row"><span>Processor:</span><strong id="inv-proc">{{ device_info.processor or 'Hardware Probe' }}</strong></div>
+                  <div class="kv-row"><span>Architecture:</span><strong id="inv-arch">{{ device_info.architecture }}</strong></div>
+                  <div class="kv-row"><span>Cores:</span><strong>{{ device_info.cpu_physical_cores }} Physical / {{ device_info.cpu_logical_cores }} Logical</strong></div>
+                  <div class="kv-row"><span>Total RAM:</span><strong id="inv-ram-total">-- GB</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================================
+           SECTION 3: RUL PREDICTION PAGE
+           ============================================================================== -->
+      <section id="view-rul" class="view-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h1>Remaining Useful Life (RUL) Prediction</h1>
+            <p>Scientific degradation modeling combining Arrhenius thermal kinetics and Coffin-Manson fatigue.</p>
+          </div>
+          <!-- Main Action Buttons -->
+          <div class="panel-actions">
+            <button class="btn btn-primary btn-lg" id="btn-calc-rul" onclick="executeSimpleRULCalculation()">
+              <i data-lucide="calculator"></i> CALCULATE RUL
+            </button>
+            <button class="btn btn-secondary btn-lg" id="btn-run-ai" onclick="triggerQuickAIDiagnosis()">
+              <i data-lucide="bot"></i> RUN AI DIAGNOSTICS
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 Simple RUL Metric Cards -->
+        <div class="kpi-grid-5">
+          <!-- 1. Estimated RUL -->
+          <div class="kpi-card highlight-card">
+            <div class="kpi-head">
+              <span class="kpi-label">ESTIMATED RUL</span>
+              <i data-lucide="hourglass" class="kpi-icon rul-accent"></i>
+            </div>
+            <div class="kpi-value text-orange" id="rul-hours-val">-- hrs</div>
+            <div class="kpi-sub" id="rul-days-val">-- operating days</div>
+          </div>
+
+          <!-- 2. Health Indicator -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">HEALTH INDICATOR</span>
+              <i data-lucide="shield-check" class="kpi-icon health-accent"></i>
+            </div>
+            <div class="kpi-value text-green" id="rul-health-txt">--%</div>
+            <div class="enterprise-progress-bar" style="margin-top:0.4rem;">
+              <div class="progress-fill fill-green" id="rul-health-bar" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- 3. Degradation Percentage -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">DEGRADATION</span>
+              <i data-lucide="trending-down" class="kpi-icon text-red"></i>
+            </div>
+            <div class="kpi-value text-red" id="rul-deg-val">--%</div>
+            <div class="kpi-sub">Cumulative Silicon Wear</div>
+          </div>
+
+          <!-- 4. Risk Level -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">OPERATIONAL RISK</span>
+              <i data-lucide="alert-triangle" class="kpi-icon text-amber"></i>
+            </div>
+            <div class="kpi-value" id="rul-risk-container">
+              <span class="badge-status" id="rul-risk-pill">NORMAL RISK</span>
+            </div>
+            <div class="kpi-sub" id="rul-ci-val">90% Confidence Band</div>
+          </div>
+
+          <!-- 5. Prediction Method -->
+          <div class="kpi-card">
+            <div class="kpi-head">
+              <span class="kpi-label">PREDICTION METHOD</span>
+              <i data-lucide="binary" class="kpi-icon text-blue"></i>
+            </div>
+            <div class="kpi-value text-blue" id="rul-method-val" style="font-size: 1.15rem;">Physics-Based</div>
+            <div class="kpi-sub">Arrhenius & Coffin-Manson</div>
+          </div>
+        </div>
+
+        <!-- Explanation of Latest Prediction -->
+        <div class="panel-card" style="margin-top: 1rem;">
+          <div class="card-title-bar">
+            <div class="title-with-icon">
+              <i data-lucide="info"></i>
+              <h3>Latest Prediction Analysis</h3>
+            </div>
+            <span class="badge-subtle">Reliability Physics</span>
+          </div>
+          <div class="prediction-explanation-content" id="rul-explanation-text">
+            <p style="color: var(--text-main); font-size: 0.88rem; line-height: 1.55;">
+              Remaining Useful Life is modeled using <strong>Arrhenius thermal kinetic acceleration</strong> combined with <strong>Coffin-Manson thermo-mechanical cycling fatigue</strong> and <strong>Black's electromigration formula</strong>. Operating temperatures and voltages are mapped against standard baseline semiconductor aging characteristics.
+            </p>
+            <div class="stats-pills-row" style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <span class="badge-status"><i data-lucide="thermometer"></i> Thermal State: <strong id="rul-exp-temp" style="margin-left:0.25rem;">--°C</strong></span>
+              <span class="badge-status"><i data-lucide="zap"></i> VCore Voltage: <strong id="rul-exp-volt" style="margin-left:0.25rem;">1.200 V</strong></span>
+              <span class="badge-status"><i data-lucide="flame"></i> Spikes (&gt;85°C): <strong id="rul-exp-spikes" style="margin-left:0.25rem;">0</strong></span>
+              <span class="badge-status"><i data-lucide="clock"></i> Monitored Time: <strong id="rul-exp-hours" style="margin-left:0.25rem;">0.0h</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Autonomous Agentic AI Diagnostics Card with Interactive ReAct Reasoning -->
+        <div class="panel-card" style="margin-top: 1rem;" id="ai-diagnostics-card">
+          <div class="card-title-bar">
+            <div class="title-with-icon">
+              <i data-lucide="bot"></i>
+              <h3>Autonomous Agentic AI Diagnostics (ReAct Multi-Agent Core)</h3>
+            </div>
+            <div class="card-actions" style="display:flex;gap:0.5rem;align-items:center;">
+              <span class="badge-status" id="agent-active-badge">READY FOR INQUIRY</span>
+              <button class="btn btn-secondary btn-sm" id="btn-view-detailed-report" onclick="openDetailedReportModal()">
+                <i data-lucide="file-text"></i> VIEW FULL REPORT
+              </button>
+            </div>
+          </div>
+
+          <!-- AI Subsystem Service Status Strip -->
+          <div class="ai-status-strip">
+            <div class="ai-status-strip-left">
+              <span id="agent-ollama-status" class="status-indicator-inline">
+                <span class="dot dot-green" id="agent-ollama-dot"></span>
+                <strong id="agent-ollama-label">OLLAMA CONNECTED</strong>
+                <span class="text-muted" style="font-size:0.7rem;">(127.0.0.1:11434)</span>
+              </span>
+              <span class="badge-status"><i data-lucide="layers"></i> 4 Physical Agents Active</span>
+            </div>
+            <div class="ai-status-strip-right">
+              <div class="model-select-wrapper">
+                <label for="agent-model-select"><i data-lucide="cpu"></i> Active LLM:</label>
+                <select id="agent-model-select" class="form-select-sm" onchange="onModelSelectChange()">
+                  <option value="qwen2.5-coder:latest" selected>qwen2.5-coder:latest</option>
+                  <option value="qwen3:latest">qwen3:latest</option>
+                  <option value="qwen2.5:3b">qwen2.5:3b</option>
+                </select>
+              </div>
+              <span class="badge-subtle" id="ai-exec-time-badge"><i data-lucide="zap"></i> Latency: -- ms</span>
+            </div>
+          </div>
+
+          <!-- Interactive User Query Bar & Preset Inquiries -->
+          <div class="ai-query-container">
+            <div class="ai-query-input-row">
+              <div class="input-with-icon-wrapper">
+                <i data-lucide="search" class="input-icon"></i>
+                <input type="text" id="ai-query-input" class="ai-query-input"
+                       placeholder="Ask about CPU health, thermal spikes, stress factors, RUL estimation, or maintenance actions..."
+                       onkeydown="if(event.key==='Enter') executeAgenticInvestigation();">
+              </div>
+              <button class="btn btn-primary" id="btn-run-agent" onclick="executeAgenticInvestigation()">
+                <i data-lucide="sparkles"></i> INVESTIGATE WITH AGENTIC AI
+              </button>
+            </div>
+            <div class="ai-presets-row">
+              <span class="ai-presets-label">Preset Inquiries:</span>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('What is the current condition of my CPU?')">
+                What is the current condition of my CPU?
+              </button>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('Are there any abnormal thermal patterns?')">
+                Are there any abnormal thermal patterns?
+              </button>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('What is causing increased CPU stress?')">
+                What is causing increased CPU stress?
+              </button>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('Explain my latest RUL prediction.')">
+                Explain my latest RUL prediction
+              </button>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('What maintenance actions do you recommend?')">
+                What maintenance actions do you recommend?
+              </button>
+              <button type="button" class="preset-chip" onclick="setAndRunAIQuery('Compare current measurements with historical measurements.')">
+                Compare current vs. historical telemetry
+              </button>
+            </div>
+          </div>
+
+          <!-- Structured Clean Sections (Summary, Issues, Recommendations, Data Quality) -->
+          <div class="ai-structured-grid">
+            <!-- 1. Executive Summary -->
+            <div class="ai-box">
+              <div class="ai-box-title"><i data-lucide="activity"></i> Executive Summary</div>
+              <div class="ai-box-body" id="ai-summary-text">
+                Enter an inquiry above or select a preset question to run collaborative ReAct agent diagnostics grounded in real hardware telemetry.
+              </div>
+            </div>
+
+            <!-- 2. Detected Issues -->
+            <div class="ai-box">
+              <div class="ai-box-title"><i data-lucide="alert-circle"></i> Detected Issues & Spikes</div>
+              <div class="ai-box-body" id="ai-issues-text">
+                No active hardware anomalies detected. Operating temperatures and voltages remain safely within standard specifications.
+              </div>
+            </div>
+
+            <!-- 3. Recommendations -->
+            <div class="ai-box">
+              <div class="ai-box-title"><i data-lucide="wrench"></i> Actionable Mitigations</div>
+              <div class="ai-box-body" id="ai-recs-text">
+                Maintain ambient operating temperature below 35°C to preserve extended RUL lifespan and continue routine 24/7 autonomous monitoring.
+              </div>
+            </div>
+
+            <!-- 4. Data Quality & Limitations -->
+            <div class="ai-box">
+              <div class="ai-box-title"><i data-lucide="shield"></i> Data Quality & Grounding</div>
+              <div class="ai-box-body" id="ai-quality-text">
+                Grounded in live physical multi-agent telemetry (Agents 1-4). Standard uncalibrated silicon baseline with 90% confidence envelope.
+              </div>
+            </div>
+          </div>
+
+          <!-- ReAct Tool Calls Trace Collapsible Drawer -->
+          <div class="accordion-container" style="margin-top: 0.85rem;">
+            <div class="accordion-header" onclick="toggleAccordion('adv-tool-trace')">
+              <div class="accordion-title">
+                <i data-lucide="terminal"></i>
+                <span>ReAct Diagnostic Reasoning & Tool Calls Trace</span>
+                <span class="badge-subtle" id="ai-tool-count-badge" style="margin-left:0.5rem;">3 Tools Executed</span>
+              </div>
+              <i data-lucide="chevron-down" id="adv-tool-trace-icon"></i>
+            </div>
+            <div class="accordion-content" id="adv-tool-trace">
+              <div id="ai-tool-trace-list" class="tool-trace-list">
+                <div class="tool-trace-item">
+                  <div class="tool-trace-header">
+                    <span><strong class="tool-trace-step">Step 1:</strong> <span class="tool-trace-name">tool_get_spike_metrics</span></span>
+                    <span class="tool-trace-time">0.8 ms</span>
+                  </div>
+                  <div class="tool-trace-desc">Retrieved validated telemetry from SQLite and physical hardware sensors</div>
+                  <div class="tool-trace-obs">{ "status": "READY", "target": "target-cpu", "sensors": "IOKit ARM64 die sensors" }</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Secondary Sections: Historical Degradation & Multi-Agent Status -->
+        <div class="accordion-container" style="margin-top: 1rem;">
+          <div class="accordion-header" onclick="toggleAccordion('adv-rul-history')">
+            <div class="accordion-title">
+              <i data-lucide="history"></i>
+              <span>Historical Degradation Curve & Past Predictions</span>
+            </div>
+            <i data-lucide="chevron-down" id="adv-rul-history-icon"></i>
+          </div>
+          <div class="accordion-content" id="adv-rul-history">
+            <div style="padding-top: 1rem;">
+              <div class="chart-container-std" style="height: 220px;">
+                <canvas id="degradation-curve-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-container" style="margin-top: 0.75rem;">
+          <div class="accordion-header" onclick="toggleAccordion('adv-rul-agents')">
+            <div class="accordion-title">
+              <i data-lucide="cpu"></i>
+              <span>Multi-Agent Physical Subsystem Status (Agents 1-4)</span>
+            </div>
+            <i data-lucide="chevron-down" id="adv-rul-agents-icon"></i>
+          </div>
+          <div class="accordion-content" id="adv-rul-agents">
+            <div class="dashboard-grid-2" style="padding-top: 0.5rem;">
+              <div class="panel-card">
+                <h4 style="font-size:0.82rem;font-weight:700;color:var(--accent-orange);margin-bottom:0.4rem;">
+                  Agent 1: Model-Based Thermal Learner
+                </h4>
+                <div class="kv-list">
+                  <div class="kv-row"><span>Belief State:</span><strong id="agent1-belief">OPTIMAL</strong></div>
+                  <div class="kv-row"><span>Estimated R_th:</span><strong id="agent1-rth">0.32 K/W</strong></div>
+                  <div class="kv-row"><span>Action:</span><strong id="agent1-action">PASSIVE_DISSIPATION</strong></div>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h4 style="font-size:0.82rem;font-weight:700;color:var(--status-green);margin-bottom:0.4rem;">
+                  Agent 2: Active PID Fan Controller
+                </h4>
+                <div class="kv-list">
+                  <div class="kv-row"><span>PWM Duty:</span><strong id="agent2-pwm">0.0%</strong></div>
+                  <div class="kv-row"><span>Current RPM:</span><strong id="agent2-rpm">0 RPM</strong></div>
+                  <div class="kv-row"><span>PID Integral Error:</span><strong id="agent2-err">0.00</strong></div>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h4 style="font-size:0.82rem;font-weight:700;color:var(--status-amber);margin-bottom:0.4rem;">
+                  Agent 3: Multi-Rail Voltage Guard
+                </h4>
+                <div class="kv-list">
+                  <div class="kv-row"><span>VCore Rail:</span><strong id="agent3-vcore">1.200 V</strong></div>
+                  <div class="kv-row"><span>Rail Status:</span><strong id="agent3-status" class="text-green">NORMAL</strong></div>
+                  <div class="kv-row"><span>Droop Events:</span><strong id="agent3-droops">0</strong></div>
+                </div>
+              </div>
+
+              <div class="panel-card">
+                <h4 style="font-size:0.82rem;font-weight:700;color:var(--status-blue);margin-bottom:0.4rem;">
+                  Agent 4: Performance Governor
+                </h4>
+                <div class="kv-list">
+                  <div class="kv-row"><span>Current Clock:</span><strong id="agent4-clock">4000 MHz</strong></div>
+                  <div class="kv-row"><span>Governor Mode:</span><strong id="agent4-mode">BALANCED</strong></div>
+                  <div class="kv-row"><span>Throttling:</span><strong id="agent4-throttle" class="text-green">INACTIVE</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==============================================================================
+           SECTION 4: DEVICES PAGE
+           ============================================================================== -->
+      <section id="view-devices" class="view-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <h1>Hardware Devices & Distributed Network</h1>
+            <p>Manage local monitoring node, remote prediction server, and distributed network synchronization.</p>
+          </div>
+          <div class="panel-actions">
+            <button class="btn btn-secondary" onclick="openPairingCodeModal()">
+              <i data-lucide="key"></i> Generate Pairing Code
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-grid-2">
+          <!-- Local Device -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="server"></i>
+                <h3>Local Machine Configuration</h3>
+              </div>
+              <span class="badge-status chip-operational" id="dev-local-status">ONLINE</span>
+            </div>
+            <div class="kv-list">
+              <div class="kv-row">
+                <span>Hostname:</span>
+                <strong>{{ device_info.hostname }}</strong>
+              </div>
+              <div class="kv-row">
+                <span>Primary IPv4:</span>
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                  <strong class="font-mono text-orange" id="dev-local-ip">{{ device_info.primary_ip }}</strong>
+                  <button class="btn btn-outline btn-xs" onclick="copyLocalIp()" title="Copy IP"><i data-lucide="copy"></i></button>
+                </div>
+              </div>
+              <div class="kv-row">
+                <span>Operational Role:</span>
+                <select id="dev-role-selector" class="industrial-select-sm" onchange="changeDeviceRole(this.value)">
+                  <option value="LOCAL_DEMO" {% if device_info.role == 'LOCAL_DEMO' %}selected{% endif %}>LOCAL_DEMO (All-in-One)</option>
+                  <option value="MONITORING_COMPUTER" {% if device_info.role == 'MONITORING_COMPUTER' %}selected{% endif %}>MONITORING_COMPUTER (Telemetry Source)</option>
+                  <option value="PREDICTION_COMPUTER" {% if device_info.role == 'PREDICTION_COMPUTER' %}selected{% endif %}>PREDICTION_COMPUTER (Prognostic Engine)</option>
+                </select>
+              </div>
+              <div class="kv-row">
+                <span>Dashboard Server:</span>
+                <strong id="dev-server-state" class="text-green">RUNNING (Port 8080)</strong>
+              </div>
+            </div>
+            <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="toggleQrModal()"><i data-lucide="qr-code"></i> Show LAN QR Code</button>
+              <button class="btn btn-outline btn-sm" onclick="restartDashboardServer()"><i data-lucide="rotate-cw"></i> Restart Server</button>
+            </div>
+          </div>
+
+          <!-- Remote Device -->
+          <div class="panel-card">
+            <div class="card-title-bar">
+              <div class="title-with-icon">
+                <i data-lucide="radio"></i>
+                <h3>Remote Synchronized Peer</h3>
+              </div>
+              <span class="connection-indicator-pill" id="dev-remote-pill">
+                <span class="dot" id="dev-remote-dot"></span>
+                <span id="dev-remote-status-text">Disconnected</span>
+              </span>
+            </div>
+            <div class="kv-list">
+              <div class="kv-row">
+                <span>Target Peer IPv4:</span>
+                <input type="text" id="dev-remote-ip-input" class="industrial-input-sm" style="width:160px;" placeholder="192.168.1.xxx" value="{{ device_info.remote_ip or '' }}">
+              </div>
+              <div class="kv-row">
+                <span>Target Port:</span>
+                <input type="number" id="dev-remote-port-input" class="industrial-input-sm" style="width:100px;" value="8080">
+              </div>
+              <div class="kv-row">
+                <span>Peer Role:</span>
+                <span class="badge-subtle" id="dev-peer-role">Unknown</span>
+              </div>
+              <div class="kv-row">
+                <span>Link Latency:</span>
+                <strong class="font-mono text-muted" id="dev-peer-latency">-- ms</strong>
+              </div>
+            </div>
+            <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="connectRemoteDevice()"><i data-lucide="link"></i> Connect</button>
+              <button class="btn btn-secondary btn-sm" onclick="testRemoteConnection()"><i data-lucide="activity"></i> Test Link</button>
+              <button class="btn btn-outline btn-sm text-red" onclick="disconnectRemoteDevice()"><i data-lucide="link-2-off"></i> Disconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Accordions: Pairing Workflow & System Activity Logs -->
+        <div class="accordion-container" style="margin-top: 1rem;">
+          <div class="accordion-header" onclick="toggleAccordion('adv-dev-pairing')">
+            <div class="accordion-title">
+              <i data-lucide="shield-check"></i>
+              <span>Distributed Machine Pairing & Cryptographic Authorization</span>
+            </div>
+            <i data-lucide="chevron-down" id="adv-dev-pairing-icon"></i>
+          </div>
+          <div class="accordion-content" id="adv-dev-pairing">
+            <p style="font-size:0.82rem;color:var(--text-sub);margin-bottom:0.75rem;">
+              Secure two-computer distributed telemetry sync using single-use, time-bound pairing codes (HMAC-SHA256 authenticated).
+            </p>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+              <input type="text" id="pairing-code-input" class="industrial-input-sm" style="width:180px;letter-spacing:0.1em;text-transform:uppercase;" placeholder="XXXX-XXXX">
+              <button class="btn btn-primary btn-sm" onclick="submitPairingCode()"><i data-lucide="check"></i> Authorize Peer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-container" style="margin-top: 0.75rem;">
+          <div class="accordion-header" onclick="toggleAccordion('adv-dev-logs')">
+            <div class="accordion-title">
+              <i data-lucide="terminal"></i>
+              <span>System Activity Logs & Distributed Events</span>
+            </div>
+            <i data-lucide="chevron-down" id="adv-dev-logs-icon"></i>
+          </div>
+          <div class="accordion-content" id="adv-dev-logs">
+            <div class="industrial-terminal" id="system-event-terminal">
+              <div style="color:var(--text-light-sub);text-align:center;padding:1.5rem;">Awaiting server logs...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==============================================================================
+       MODALS
+       ============================================================================== -->
+  <!-- 1. Detailed AI Diagnostic Report Modal -->
+  <div class="modal-overlay" id="detailed-report-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="title-with-icon">
+          <i data-lucide="file-text"></i>
+          <h3>Complete AI Diagnostic Assessment</h3>
+        </div>
+        <button class="btn btn-outline btn-xs" onclick="closeDetailedReportModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="detailed-report-content">
+        <p style="color:var(--text-muted);text-align:center;">No report generated yet. Click "RUN AI DIAGNOSTICS" first.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="copyDetailedReport()"><i data-lucide="copy"></i> Copy Full Text</button>
+        <button class="btn btn-primary btn-sm" onclick="closeDetailedReportModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. LAN QR Code Modal -->
+  <div class="modal-overlay" id="lan-qr-modal">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <div class="title-with-icon">
+          <i data-lucide="qr-code"></i>
+          <h3>LAN Mobile Access QR</h3>
+        </div>
+        <button class="btn btn-outline btn-xs" onclick="closeQrModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;padding:2rem;">
+        <div id="qr-code-canvas-container" style="background:#fff;padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);box-shadow:var(--shadow-card);">
+          <img id="lan-qr-image" src="" alt="LAN Access QR" style="width:200px;height:200px;display:block;">
+        </div>
+        <div style="margin-top:1rem;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-main);" id="lan-qr-url-text">
+          http://{{ device_info.primary_ip }}:8080
+        </div>
+        <p style="font-size:0.76rem;color:var(--text-muted);margin-top:0.35rem;">Scan with any phone or tablet on the same Wi-Fi network.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" onclick="closeQrModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Main Client Application Controller -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

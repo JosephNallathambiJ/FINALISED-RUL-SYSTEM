@@ -1,0 +1,67 @@
+# Config settings for Active Cooling AI Agent - agent2
+# Explicitly handles CPU fan RPM, PWM duty cycles, acoustics, and thermal dissipation
+
+active_profile: "laptop"
+db_path: "rpm_cooling_history.db"
+agent_interval_seconds: 1.5
+
+profiles:
+  laptop:
+    name: "Laptop Computer Cooling"
+    min_rpm: 0
+    max_rpm: 5200
+    silent_temp_threshold: 48.0   # Turn fan off or minimum RPM below 48°C
+    target_temp: 65.0             # Maintain target temperature
+    critical_temp: 85.0
+    max_noise_dba: 42.0           # Silent/Quiet acoustic limit for office/home
+    thermal_priority: 0.75
+    noise_priority: 0.65          # Moderate-high penalty for loud fan noise
+    power_priority: 0.50
+    kp: 2.5
+    ki: 0.15
+    kd: 0.80
+
+  computer:
+    name: "Desktop Workstation Cooling"
+    min_rpm: 600
+    max_rpm: 3600
+    silent_temp_threshold: 40.0
+    target_temp: 60.0
+    critical_temp: 90.0
+    max_noise_dba: 55.0           # Higher noise tolerance for workstation fans
+    thermal_priority: 0.90
+    noise_priority: 0.30
+    power_priority: 0.20
+    kp: 3.2
+    ki: 0.20
+    kd: 1.10
+
+  drone:
+    name: "Drone High-Velocity ESC Cooling Motor"
+    min_rpm: 1000
+    max_rpm: 12000
+    silent_temp_threshold: 30.0
+    target_temp: 52.0
+    critical_temp: 72.0
+    max_noise_dba: 90.0           # Zero noise penalty in flight
+    thermal_priority: 1.00
+    noise_priority: 0.00
+    power_priority: 0.70          # Battery optimization
+    kp: 4.5
+    ki: 0.30
+    kd: 1.50
+
+  iot:
+    name: "IoT Micro PWM Fan Node"
+    min_rpm: 0
+    max_rpm: 3200
+    silent_temp_threshold: 42.0
+    target_temp: 55.0
+    critical_temp: 70.0
+    max_noise_dba: 35.0
+    thermal_priority: 0.80
+    noise_priority: 0.50
+    power_priority: 0.85
+    kp: 1.8
+    ki: 0.10
+    kd: 0.50
