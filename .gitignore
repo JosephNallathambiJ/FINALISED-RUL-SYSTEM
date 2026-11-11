@@ -11,3 +11,7 @@ __pycache__/
 *.joblib
 *.png
 commercial_thermal_map_dataset-main/
+
+# Database files
+*.db
+*.sqlite3
