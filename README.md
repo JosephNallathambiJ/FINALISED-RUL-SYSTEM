@@ -381,3 +381,4 @@ python test_run.py
 1. **Uncalibrated Heuristics:** Standard Arrhenius activation energy ($E_a \approx 0.7\text{ eV}$) and Coffin-Manson exponents ($q \approx 2.5$) represent accepted general physics for semiconductor devices, but actual rate constants vary across silicon fabrication nodes (e.g. 5nm FinFET vs 28nm planar). Outputs must be treated as prognostic estimates rather than certified physical truth unless calibrated against destructive lifetime benches.
 2. **Sensor Precision:** Many consumer operating systems expose CPU package thermal diodes rather than true hotspot silicon junctions. Temperatures reported through `psutil` or external probes should be interpreted as lower bounds on peak junction temperatures.
 # FINALISED-RUL-SYSTEM
+# FINALISED-RUL-SYSTEM
